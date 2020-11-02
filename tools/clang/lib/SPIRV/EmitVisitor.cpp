@@ -1372,12 +1372,16 @@ bool EmitVisitor::visit(SpirvDebugFunction *inst) {
   curInst.push_back(linkageNameId);
   curInst.push_back(getLiteralEncodedForDebugInfo(inst->getFlags()));
   curInst.push_back(getLiteralEncodedForDebugInfo(inst->getScopeLine()));
-  auto *fn = inst->getSpirvFunction();
-  if (fn) {
-    curInst.push_back(getOrAssignResultId<SpirvFunction>(fn));
-  } else {
-    curInst.push_back(
-        getOrAssignResultId<SpirvInstruction>(inst->getDebugInfoNone()));
+  /// Only emit the function Id for OpenCL debug info, Vulkan debug info
+  /// disallows forward references
+  if (!spvOptions.debugInfoVulkan) {
+    auto *fn = inst->getSpirvFunction();
+    if (fn) {
+      curInst.push_back(getOrAssignResultId<SpirvFunction>(fn));
+    } else {
+      curInst.push_back(
+          getOrAssignResultId<SpirvInstruction>(inst->getDebugInfoNone()));
+    }
   }
   finalizeInstruction(&richDebugInfo);
   return true;
@@ -1511,8 +1515,13 @@ bool EmitVisitor::visit(SpirvDebugTypeMember *inst) {
   curInst.push_back(getOrAssignResultId<SpirvInstruction>(inst->getSource()));
   curInst.push_back(getLiteralEncodedForDebugInfo(inst->getLine()));
   curInst.push_back(getLiteralEncodedForDebugInfo(inst->getColumn()));
-  curInst.push_back(
-      getOrAssignResultId<SpirvInstruction>(inst->getParentScope()));
+  /// only emit the parent reference for OpenCL debug info. Vulkan debug info
+  /// breaks reference cycle between DebugTypeComposite and DebugTypeMember,
+  /// with only the composite referencing its members and not the reverse.
+  if (!spvOptions.debugInfoVulkan) {
+    curInst.push_back(
+        getOrAssignResultId<SpirvInstruction>(inst->getParentScope()));
+  }
   curInst.push_back(offset);
   curInst.push_back(size);
   curInst.push_back(getLiteralEncodedForDebugInfo(inst->getDebugFlags()));
