@@ -140,11 +140,11 @@ public:
   DEFINE_VISIT_METHOD(SpirvRayQueryOpKHR)
 #undef DEFINE_VISIT_METHOD
 
+  const SpirvCodeGenOptions &getCodeGenOptions() const { return spvOptions; }
+
 protected:
   explicit Visitor(const SpirvCodeGenOptions &opts, SpirvContext &ctx)
       : spvOptions(opts), context(ctx) {}
-
-  const SpirvCodeGenOptions &getCodeGenOptions() const { return spvOptions; }
 
 protected:
   const SpirvCodeGenOptions &spvOptions;
