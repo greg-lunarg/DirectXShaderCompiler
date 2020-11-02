@@ -919,6 +919,15 @@ SpirvDebugFunction *SpirvBuilder::createDebugFunction(
   return inst;
 }
 
+SpirvDebugFunctionDefinition *
+SpirvBuilder::createDebugFunctionDef(SpirvDebugFunction *function,
+                                     SpirvFunction *fn) {
+  auto *inst = new (context) SpirvDebugFunctionDefinition(function, fn);
+  assert(insertPoint && "null insert point");
+  insertPoint->addInstruction(inst);
+  return inst;
+}
+
 SpirvInstruction *
 SpirvBuilder::createRayQueryOpsKHR(spv::Op opcode, QualType resultType,
                                    ArrayRef<SpirvInstruction *> operands,

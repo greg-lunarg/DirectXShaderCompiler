@@ -492,6 +492,9 @@ public:
                       llvm::StringRef linkageName, uint32_t flags,
                       uint32_t scopeLine, SpirvFunction *fn);
 
+  SpirvDebugFunctionDefinition *
+  createDebugFunctionDef(SpirvDebugFunction *function, SpirvFunction *fn);
+
   /// \brief Create SPIR-V instructions for KHR RayQuery ops
   SpirvInstruction *
   createRayQueryOpsKHR(spv::Op opcode, QualType resultType,
