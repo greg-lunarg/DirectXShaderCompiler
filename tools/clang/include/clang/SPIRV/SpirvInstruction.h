@@ -128,7 +128,8 @@ public:
     IK_UnaryOp,                   // Unary operations
     IK_VectorShuffle,             // OpVectorShuffle
 
-    // For DebugInfo instructions defined in OpenCL.DebugInfo.100
+    // For DebugInfo instructions defined in
+    // OpenCL.DebugInfo.100 and NonSemantic.Vulkan.DebugInfo.100
     IK_DebugInfoNone,
     IK_DebugCompilationUnit,
     IK_DebugSource,
@@ -1995,7 +1996,7 @@ public:
   bool invokeVisitor(Visitor *v) override;
 };
 
-/// \breif Base class for all OpenCL.DebugInfo.100 extension instructions.
+/// \brief Base class for all rich DebugInfo extension instructions.
 /// Note that all of these instructions should be added to the SPIR-V module as
 /// an OpExtInst instructions. So, all of these instructions must:
 /// 1) contain the result-id of the extended instruction set
@@ -2378,8 +2379,8 @@ private:
   SpirvDebugInstruction *scope;
 };
 
-/// The following classes represent debug types defined in the
-/// OpenCL.DebugInfo.100 spec.
+/// The following classes represent debug types defined in the rich DebugInfo
+/// spec.
 ///
 /// Note: While debug type and SPIR-V type are very similar, they are not quite
 /// identical. For example: the debug type contains the HLL string name of the

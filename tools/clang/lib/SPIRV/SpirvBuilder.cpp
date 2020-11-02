@@ -1168,8 +1168,9 @@ SpirvExtInstImport *SpirvBuilder::getExtInstSet(llvm::StringRef extName) {
   return set;
 }
 
-SpirvExtInstImport *SpirvBuilder::getOpenCLDebugInfoExtInstSet() {
-  return getExtInstSet("OpenCL.DebugInfo.100");
+SpirvExtInstImport *SpirvBuilder::getDebugInfoExtInstSet(bool vulkanDebugInfo) {
+  return getExtInstSet(vulkanDebugInfo ? "NonSemantic.Vulkan.DebugInfo.100"
+                                       : "OpenCL.DebugInfo.100");
 }
 
 SpirvVariable *SpirvBuilder::addStageIOVar(QualType type,

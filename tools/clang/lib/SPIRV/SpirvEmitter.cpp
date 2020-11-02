@@ -520,7 +520,7 @@ SpirvEmitter::SpirvEmitter(CompilerInstance &ci)
                                              spvContext.getMinorVersion(),
                                              fileNames, source);
 
-  // OpenCL.DebugInfo.100 DebugSource
+  // rich DebugInfo DebugSource
   if (spirvOptions.debugInfoRich) {
     auto *dbgSrc = spvBuilder.createDebugSource(mainSourceFile->getString());
     // spvContext.getDebugInfo().insert() inserts {string key, RichDebugInfo}
