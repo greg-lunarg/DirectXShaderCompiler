@@ -312,6 +312,12 @@ private:
   /// one. Otherwise, create it, keep it in stringIdMap, and return its id.
   uint32_t getOrCreateOpStringId(llvm::StringRef str);
 
+  /// In the OpenCL.DebugInfo.100 spec some parameters are literals, where in
+  /// the NonSemantic.Vulkan.DebugInfo.100 spec they are encoded as constant
+  /// operands. This function takes care of checking which version we are
+  /// emitting and either returning the literal directly or a constant.
+  uint32_t getLiteralEncodedForDebugInfo(uint32_t val);
+
   // Emits an OpLine instruction for the given operation into the given binary
   // section.
   void emitDebugLine(spv::Op op, const SourceLocation &loc,
