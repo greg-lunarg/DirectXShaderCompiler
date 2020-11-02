@@ -229,10 +229,10 @@ void EmitVisitor::emitDebugLine(spv::Op op, const SourceLocation &loc,
   if (!isOpLineLegalForOp(op))
     return;
 
-  // DebugGlobalVariable and DebugLocalVariable of OpenCL.DebugInfo.100 already
-  // has the line and the column information. We do not want to emit OpLine
-  // for global variables and local variables. Instead, we want to emit OpLine
-  // for their initialization if exists.
+  // DebugGlobalVariable and DebugLocalVariable of rich DebugInfo already has
+  // the line and the column information. We do not want to emit OpLine for
+  // global variables and local variables. Instead, we want to emit OpLine for
+  // their initialization if exists.
   if (op == spv::Op::OpVariable)
     return;
 
