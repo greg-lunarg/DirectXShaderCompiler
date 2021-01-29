@@ -1251,9 +1251,65 @@ bool EmitVisitor::visit(SpirvDebugInfoNone *inst) {
 }
 
 bool EmitVisitor::visit(SpirvDebugSource *inst) {
+  // Emit the OpString for the file name.
   uint32_t fileId = getOrCreateOpStringId(inst->getFile());
   if (!debugMainFileId)
     debugMainFileId = fileId;
+
+  if (dumpedFiles.count(fileId) != 0)
+    return true;
+  dumpedFiles.insert(fileId);
+
+  if (spvOptions.debugInfoVulkan) {
+    // Chop up the source into multiple segments if it is too long.
+    llvm::Optional<llvm::StringRef> firstSnippet = llvm::None;
+    llvm::SmallVector<llvm::StringRef, 2> choppedSrcCode;
+    uint32_t textId = 0;
+    if (spvOptions.debugInfoSource) {
+      auto text = ReadSourceCode(inst->getFile());
+      if (!text.empty()) {
+        chopString(text, &choppedSrcCode);
+        if (!choppedSrcCode.empty()) {
+          firstSnippet =
+              llvm::Optional<llvm::StringRef>(choppedSrcCode.front());
+        }
+      }
+      if (firstSnippet.hasValue())
+        textId = getOrCreateOpStringId(firstSnippet.getValue());
+    }
+	// Generate DebugSource
+    initInstruction(inst);
+    curInst.push_back(inst->getResultTypeId());
+    curInst.push_back(getOrAssignResultId<SpirvInstruction>(inst));
+    curInst.push_back(
+        getOrAssignResultId<SpirvInstruction>(inst->getInstructionSet()));
+    curInst.push_back(inst->getDebugOpcode());
+    curInst.push_back(fileId);
+    if (textId)
+      curInst.push_back(textId);
+    finalizeInstruction(&richDebugInfo);
+
+    // Now emit DebugSourceContinued for the [second:last] snippets.
+    for (uint32_t i = 1; i < choppedSrcCode.size(); ++i) {
+      textId = getOrCreateOpStringId(choppedSrcCode[i]);
+      initInstruction(spv::Op::OpExtInst, /* SourceLocation */ {});
+      curInst.push_back(inst->getResultTypeId());
+      curInst.push_back(takeNextId());
+      curInst.push_back(
+          getOrAssignResultId<SpirvInstruction>(inst->getInstructionSet()));
+      curInst.push_back(102u); // DebugSourceContinued
+      curInst.push_back(fileId);
+      curInst.push_back(textId);
+      finalizeInstruction(&richDebugInfo);
+    }
+    return true;
+  }
+  // OpenCL.DebugInfo.100
+  // TODO(greg-lunarg): This logic does not currently handle text that is too
+  // long for a string. In this case, the entire compiler returns without
+  // producing a SPIR-V file. Once DebugSourceContinued is added to
+  // OpenCL.DebugInfo.100, the logic below can be removed and the
+  // NonSemantic.Shader.DebugInfo.100 logic above can be used for both cases.
   uint32_t textId = 0;
   if (spvOptions.debugInfoSource) {
     auto text = ReadSourceCode(inst->getFile());
