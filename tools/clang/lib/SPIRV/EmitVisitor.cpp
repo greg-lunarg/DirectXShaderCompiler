@@ -1298,7 +1298,6 @@ bool EmitVisitor::visit(SpirvDebugSource *inst) {
       curInst.push_back(
           getOrAssignResultId<SpirvInstruction>(inst->getInstructionSet()));
       curInst.push_back(102u); // DebugSourceContinued
-      curInst.push_back(fileId);
       curInst.push_back(textId);
       finalizeInstruction(&richDebugInfo);
     }
