@@ -195,9 +195,9 @@ public:
         typeHandler(astCtx, spvCtx, opts, &debugVariableBinary,
                     &annotationsBinary, &typeConstantBinary,
                     [this]() -> uint32_t { return takeNextId(); }),
-        debugMainFileId(0), debugLine(0), debugColumn(0),
-        lastOpWasMergeInst(false), inEntryFunctionWrapper(false),
-        hlslVersion(0) {}
+        debugMainFileId(0), debugInfoExtInstId(0), debugLine(0),
+	    debugColumn(0), lastOpWasMergeInst(false),
+	    inEntryFunctionWrapper(false), hlslVersion(0) {}
 
   ~EmitVisitor();
 
@@ -388,6 +388,8 @@ private:
   llvm::StringMap<uint32_t> stringIdMap;
   // Main file information for debugging that will be used by OpLine.
   uint32_t debugMainFileId;
+  // Id for Vulkan DebugInfo extended instruction set. Used when generating Debug[No]Line
+  uint32_t debugInfoExtInstId;
   // One HLSL source line may result in several SPIR-V instructions. In order to
   // avoid emitting many OpLine instructions with identical line and column
   // numbers, we record the last line and column number that was used by OpLine,
@@ -400,8 +402,9 @@ private:
   bool lastOpWasMergeInst;
   // True if currently it enters an entry function wrapper.
   bool inEntryFunctionWrapper;
-  // Set of files that we already dumped their source code in OpSource.
-  llvm::DenseSet<uint32_t> dumpedFiles;
+  // Map of filename string id to the id of their Source instruction. For source
+  // without a result id, use 1.
+  llvm::DenseMap<uint32_t, uint32_t> emittedSource;
   uint32_t hlslVersion;
   // Vector to contain SpirvInstruction objects created by this class. The
   // destructor of this class will release them.
