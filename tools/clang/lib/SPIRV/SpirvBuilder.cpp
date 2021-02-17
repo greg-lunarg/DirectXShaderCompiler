@@ -310,10 +310,11 @@ SpirvUnaryOp *SpirvBuilder::createUnaryOp(spv::Op op, QualType resultType,
 SpirvBinaryOp *SpirvBuilder::createBinaryOp(spv::Op op, QualType resultType,
                                             SpirvInstruction *lhs,
                                             SpirvInstruction *rhs,
-                                            SourceLocation loc) {
+                                            SourceLocation loc,
+                                            SourceRange range) {
   assert(insertPoint && "null insert point");
   auto *instruction =
-      new (context) SpirvBinaryOp(op, resultType, loc, lhs, rhs);
+      new (context) SpirvBinaryOp(op, resultType, loc, lhs, rhs, range);
   insertPoint->addInstruction(instruction);
   return instruction;
 }

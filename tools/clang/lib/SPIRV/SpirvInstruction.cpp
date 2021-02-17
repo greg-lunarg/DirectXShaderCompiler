@@ -109,9 +109,9 @@ DEFINE_INVOKE_VISITOR_FOR_CLASS(SpirvRayQueryOpKHR)
 #undef DEFINE_INVOKE_VISITOR_FOR_CLASS
 
 SpirvInstruction::SpirvInstruction(Kind k, spv::Op op, QualType astType,
-                                   SourceLocation loc)
+                                   SourceLocation loc, SourceRange range)
     : kind(k), opcode(op), astResultType(astType), resultId(0), srcLoc(loc),
-      debugName(), resultType(nullptr), resultTypeId(0),
+      srcRange(range), debugName(), resultType(nullptr), resultTypeId(0),
       layoutRule(SpirvLayoutRule::Void), containsAlias(false),
       storageClass(spv::StorageClass::Function), isRValue_(false),
       isRelaxedPrecision_(false), isNonUniform_(false), isPrecise_(false) {}
@@ -420,7 +420,7 @@ SpirvBarrier::SpirvBarrier(SourceLocation loc, spv::Scope memScope,
 
 SpirvBinaryOp::SpirvBinaryOp(spv::Op opcode, QualType resultType,
                              SourceLocation loc, SpirvInstruction *op1,
-                             SpirvInstruction *op2)
+                             SpirvInstruction *op2, SourceRange range)
     : SpirvInstruction(IK_BinaryOp, opcode, resultType, loc), operand1(op1),
       operand2(op2) {}
 
