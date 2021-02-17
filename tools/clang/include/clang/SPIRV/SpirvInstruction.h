@@ -218,7 +218,7 @@ public:
 protected:
   // Forbid creating SpirvInstruction directly
   SpirvInstruction(Kind kind, spv::Op opcode, QualType astResultType,
-                   SourceLocation loc);
+                   SourceLocation loc, SourceRange range = {});
 
 protected:
   const Kind kind;
@@ -227,6 +227,7 @@ protected:
   QualType astResultType;
   uint32_t resultId;
   SourceLocation srcLoc;
+  SourceRange srcRange;
   std::string debugName;
   const SpirvType *resultType;
   uint32_t resultTypeId;
@@ -993,7 +994,8 @@ private:
 class SpirvBinaryOp : public SpirvInstruction {
 public:
   SpirvBinaryOp(spv::Op opcode, QualType resultType, SourceLocation loc,
-                SpirvInstruction *op1, SpirvInstruction *op2);
+                SpirvInstruction *op1, SpirvInstruction *op2,
+                SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvBinaryOp)
 

@@ -5826,7 +5826,8 @@ SpirvInstruction *SpirvEmitter::processBinaryOp(
       if (computationType != lhsType)
         val = castToType(val, computationType, lhsType, lhs->getExprLoc());
     } else {
-      val = spvBuilder.createBinaryOp(spvOp, resultType, lhsVal, rhsVal, loc);
+      val = spvBuilder.createBinaryOp(spvOp, resultType, lhsVal, rhsVal, loc,
+		                              sourceRange);
     }
 
     val->setRValue();
