@@ -913,12 +913,13 @@ SpirvDebugExpression *SpirvBuilder::getOrCreateNullDebugExpression() {
 }
 
 SpirvDebugDeclare *SpirvBuilder::createDebugDeclare(
-    SpirvDebugLocalVariable *dbgVar, SpirvInstruction *var,
+    SpirvDebugLocalVariable *dbgVar, SpirvInstruction *var, SourceRange range,
     llvm::Optional<SpirvDebugExpression *> dbgExpr) {
   auto *decl = new (context)
       SpirvDebugDeclare(dbgVar, var,
                         dbgExpr.hasValue() ? dbgExpr.getValue()
-                                           : getOrCreateNullDebugExpression());
+                                           : getOrCreateNullDebugExpression(),
+                        range);
   if (isa<SpirvFunctionParameter>(var)) {
     assert(function && "found detached parameter");
     function->addParameterDebugDeclare(decl);

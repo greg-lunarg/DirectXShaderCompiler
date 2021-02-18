@@ -486,6 +486,7 @@ public:
 
   SpirvDebugDeclare *createDebugDeclare(
       SpirvDebugLocalVariable *dbgVar, SpirvInstruction *var,
+      SourceRange range = {},
       llvm::Optional<SpirvDebugExpression *> dbgExpr = llvm::None);
 
   SpirvDebugFunction *
