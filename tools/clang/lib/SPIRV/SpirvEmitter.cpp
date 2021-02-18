@@ -1022,6 +1022,7 @@ void SpirvEmitter::doFunctionDecl(const FunctionDecl *decl) {
                            decl->hasAttr<NoInlineAttr>(), func);
 
   auto loc = decl->getLocStart();
+  auto range = decl->getSourceRange();
   RichDebugInfo *info = nullptr;
   SpirvDebugFunction *debugFunction = nullptr;
   const auto &sm = astContext.getSourceManager();
@@ -1075,7 +1076,7 @@ void SpirvEmitter::doFunctionDecl(const FunctionDecl *decl) {
         auto *debugLocalVar = spvBuilder.createDebugLocalVariable(
             valueType, "this", info->source, line, column,
             info->scopeStack.back(), flags, 1);
-        spvBuilder.createDebugDeclare(debugLocalVar, curThis, loc);
+        spvBuilder.createDebugDeclare(debugLocalVar, curThis, loc, range);
       }
 
       isNonStaticMemberFn = true;
@@ -1297,6 +1298,7 @@ void SpirvEmitter::doVarDecl(const VarDecl *decl) {
     return;
 
   const auto loc = decl->getLocation();
+  const auto range = decl->getSourceRange();
 
   // HLSL has the 'string' type which can be used for rare purposes such as
   // printf (SPIR-V's DebugPrintf). SPIR-V does not have a 'char' or 'string'
@@ -1423,7 +1425,7 @@ void SpirvEmitter::doVarDecl(const VarDecl *decl) {
       auto *debugLocalVar = spvBuilder.createDebugLocalVariable(
           decl->getType(), decl->getName(), info->source, line, column,
           info->scopeStack.back(), flags);
-      spvBuilder.createDebugDeclare(debugLocalVar, var, loc);
+      spvBuilder.createDebugDeclare(debugLocalVar, var, loc, range);
     }
 
     // Variables that are not externally visible and of opaque types should

@@ -900,10 +900,12 @@ SpirvDebugExpression::SpirvDebugExpression(
 SpirvDebugDeclare::SpirvDebugDeclare(SpirvDebugLocalVariable *debugVar_,
                                      SpirvInstruction *var_,
                                      SpirvDebugExpression *expr,
-                                     SourceLocation loc)
+                                     SourceLocation loc,
+                                     SourceRange range)
     : SpirvDebugInstruction(IK_DebugDeclare, /*opcode*/ 28u),
       debugVar(debugVar_), var(var_), expression(expr) {
   srcLoc = loc;
+  srcRange = range;
 }
 
 SpirvDebugLexicalBlock::SpirvDebugLexicalBlock(SpirvDebugSource *source_,
