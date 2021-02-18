@@ -182,6 +182,7 @@ public:
   void setResultId(uint32_t id) { resultId = id; }
 
   clang::SourceLocation getSourceLocation() const { return srcLoc; }
+  clang::SourceRange getSourceRange() const { return srcRange; }
 
   void setDebugName(llvm::StringRef name) { debugName = name; }
   llvm::StringRef getDebugName() const { return debugName; }

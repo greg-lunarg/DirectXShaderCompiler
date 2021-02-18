@@ -220,6 +220,7 @@ void EmitVisitor::emitDebugNameForInstruction(uint32_t resultId,
 }
 
 void EmitVisitor::emitDebugLine(spv::Op op, const SourceLocation &loc,
+                                const SourceRange &range,
                                 std::vector<uint32_t> *section,
                                 bool isDebugScope) {
   if (!spvOptions.debugInfoLine)
@@ -347,13 +348,32 @@ void EmitVisitor::emitDebugLine(spv::Op op, const SourceLocation &loc,
     curInst.push_back(debugInfoExtInstId);
     curInst.push_back(103u); // DebugLine
     curInst.push_back(emittedSource[fileId]);
-	// TODO(greg-lunarg): Emit true last line and column
-    uint32_t lineEncode = getLiteralEncodedForDebugInfo(line);
-    curInst.push_back(lineEncode);
-    curInst.push_back(lineEncode); // Last line
-    uint32_t columnEncode = getLiteralEncodedForDebugInfo(column);
-    curInst.push_back(columnEncode);
-    curInst.push_back(columnEncode); // Last column
+    uint32_t bLineEncode;
+    uint32_t eLineEncode;
+    uint32_t bColEncode;
+    uint32_t eColEncode;
+    if (range.isInvalid()) {
+	  // No range, just use loc for begin and end
+      bLineEncode = getLiteralEncodedForDebugInfo(line);
+      eLineEncode = bLineEncode;
+      bColEncode = getLiteralEncodedForDebugInfo(column);
+      eColEncode = bColEncode;
+    } else {
+      SourceLocation bLoc = range.getBegin();
+      uint32_t bLine = sm.getPresumedLineNumber(bLoc);
+      uint32_t bCol = sm.getPresumedColumnNumber(bLoc);
+      bLineEncode = getLiteralEncodedForDebugInfo(bLine);
+      bColEncode = getLiteralEncodedForDebugInfo(bCol);
+      SourceLocation eLoc = range.getEnd();
+      uint32_t eLine = sm.getPresumedLineNumber(eLoc);
+      uint32_t eCol = sm.getPresumedColumnNumber(eLoc);
+      eLineEncode = getLiteralEncodedForDebugInfo(eLine);
+      eColEncode = getLiteralEncodedForDebugInfo(eCol);
+    }
+    curInst.push_back(bLineEncode);
+    curInst.push_back(eLineEncode);
+    curInst.push_back(bColEncode);
+    curInst.push_back(eColEncode);
   }
   curInst[0] |= static_cast<uint32_t>(curInst.size()) << 16;
   section->insert(section->end(), curInst.begin(), curInst.end());
@@ -391,7 +411,7 @@ void EmitVisitor::initInstruction(SpirvInstruction *inst) {
   if (auto *var = dyn_cast<SpirvVariable>(inst))
     isGlobalVar = var->getStorageClass() != spv::StorageClass::Function;
   const auto op = inst->getopcode();
-  emitDebugLine(op, inst->getSourceLocation(),
+  emitDebugLine(op, inst->getSourceLocation(), inst->getSourceRange(),
                 isGlobalVar ? &globalVarsBinary : &mainBinary,
                 isa<SpirvDebugScope>(inst));
 
@@ -401,7 +421,7 @@ void EmitVisitor::initInstruction(SpirvInstruction *inst) {
 }
 
 void EmitVisitor::initInstruction(spv::Op op, const SourceLocation &loc) {
-  emitDebugLine(op, loc, &mainBinary);
+  emitDebugLine(op, loc, {}, &mainBinary);
 
   curInst.clear();
   curInst.push_back(static_cast<uint32_t>(op));
