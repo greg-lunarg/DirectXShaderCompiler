@@ -645,11 +645,12 @@ SpirvImageOp::SpirvImageOp(
     SpirvInstruction *constOffsetInst, SpirvInstruction *offsetInst,
     SpirvInstruction *constOffsetsInst, SpirvInstruction *sampleInst,
     SpirvInstruction *minLodInst, SpirvInstruction *componentInst,
-    SpirvInstruction *texelToWriteInst)
-    : SpirvInstruction(IK_ImageOp, op, resultType, loc), image(imageInst),
-      coordinate(coordinateInst), dref(drefInst), bias(biasInst), lod(lodInst),
-      gradDx(gradDxInst), gradDy(gradDyInst), constOffset(constOffsetInst),
-      offset(offsetInst), constOffsets(constOffsetsInst), sample(sampleInst),
+    SpirvInstruction *texelToWriteInst, SourceRange range)
+    : SpirvInstruction(IK_ImageOp, op, resultType, loc, range),
+      image(imageInst), coordinate(coordinateInst), dref(drefInst),
+      bias(biasInst), lod(lodInst), gradDx(gradDxInst), gradDy(gradDyInst),
+      constOffset(constOffsetInst), offset(offsetInst),
+      constOffsets(constOffsetsInst), sample(sampleInst),
       minLod(minLodInst), component(componentInst),
       texelToWrite(texelToWriteInst), operandsMask(mask) {
   assert(op == spv::Op::OpImageSampleImplicitLod ||
@@ -744,9 +745,10 @@ SpirvCopyObject::SpirvCopyObject(QualType resultType, SourceLocation loc,
 
 SpirvSampledImage::SpirvSampledImage(QualType resultType, SourceLocation loc,
                                      SpirvInstruction *imageInst,
-                                     SpirvInstruction *samplerInst)
+                                     SpirvInstruction *samplerInst,
+                                     SourceRange range)
     : SpirvInstruction(IK_SampledImage, spv::Op::OpSampledImage, resultType,
-                       loc),
+                       loc, range),
       image(imageInst), sampler(samplerInst) {}
 
 SpirvSelect::SpirvSelect(QualType resultType, SourceLocation loc,

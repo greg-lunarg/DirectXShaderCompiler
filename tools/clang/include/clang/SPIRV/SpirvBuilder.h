@@ -258,7 +258,8 @@ public:
   /// decorations for the given parameters.
   SpirvSampledImage *createSampledImage(QualType, SpirvInstruction *image,
                                         SpirvInstruction *sampler,
-                                        SourceLocation);
+                                        SourceLocation loc,
+                                        SourceRange range = {});
 
   /// \brief Creates an OpImageTexelPointer SPIR-V instruction with the given
   /// parameters.
@@ -296,7 +297,7 @@ public:
                     SpirvInstruction *constOffset, SpirvInstruction *varOffset,
                     SpirvInstruction *constOffsets, SpirvInstruction *sample,
                     SpirvInstruction *minLod, SpirvInstruction *residencyCodeId,
-                    SourceLocation loc);
+                    SourceLocation loc, SourceRange range = {});
 
   /// \brief Creates SPIR-V instructions for reading a texel from an image. If
   /// doImageFetch is true, OpImageFetch is used. OpImageRead is used otherwise.
@@ -336,7 +337,7 @@ public:
                     SpirvInstruction *compareVal, SpirvInstruction *constOffset,
                     SpirvInstruction *varOffset, SpirvInstruction *constOffsets,
                     SpirvInstruction *sample, SpirvInstruction *residencyCode,
-                    SourceLocation);
+                    SourceLocation loc, SourceRange range = {});
 
   /// \brief Creates an OpImageSparseTexelsResident SPIR-V instruction for the
   /// given Resident Code and returns the instruction pointer.

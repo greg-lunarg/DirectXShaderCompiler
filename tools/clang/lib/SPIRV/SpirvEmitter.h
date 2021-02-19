@@ -1010,7 +1010,7 @@ private:
                     SpirvInstruction *constOffset, SpirvInstruction *varOffset,
                     SpirvInstruction *constOffsets, SpirvInstruction *sample,
                     SpirvInstruction *minLod, SpirvInstruction *residencyCodeId,
-                    SourceLocation loc);
+                    SourceLocation loc, SourceRange range = {});
 
   /// \brief Returns OpVariable to be used as 'Interface' operands of
   /// OpEntryPoint. entryPoint is the SpirvFunction for the OpEntryPoint.

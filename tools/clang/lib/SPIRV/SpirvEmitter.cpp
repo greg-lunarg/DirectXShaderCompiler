@@ -4468,7 +4468,7 @@ SpirvInstruction *SpirvEmitter::createImageSample(
     SpirvInstruction *constOffset, SpirvInstruction *varOffset,
     SpirvInstruction *constOffsets, SpirvInstruction *sample,
     SpirvInstruction *minLod, SpirvInstruction *residencyCodeId,
-    SourceLocation loc) {
+    SourceLocation loc, SourceRange range) {
 
   if (varOffset)
     needsLegalization = true;
@@ -4479,7 +4479,8 @@ SpirvInstruction *SpirvEmitter::createImageSample(
     return spvBuilder.createImageSample(retType, imageType, image, sampler,
                                         coordinate, compareVal, bias, lod, grad,
                                         constOffset, varOffset, constOffsets,
-                                        sample, minLod, residencyCodeId, loc);
+                                        sample, minLod, residencyCodeId, loc,
+                                        range);
   }
 
   // Non-Dref Sample instructions in SPIR-V must always return a vec4.
@@ -4506,7 +4507,7 @@ SpirvInstruction *SpirvEmitter::createImageSample(
   auto *retVal = spvBuilder.createImageSample(
       texelType, imageType, image, sampler, coordinate, compareVal, bias, lod,
       grad, constOffset, varOffset, constOffsets, sample, minLod,
-      residencyCodeId, loc);
+      residencyCodeId, loc, range);
 
   // Extract smaller vector from the vec4 result if necessary.
   if (texelType != retType) {
@@ -4548,6 +4549,7 @@ SpirvEmitter::processTextureSampleGather(const CXXMemberCallExpr *expr,
 
   const auto numArgs = expr->getNumArgs();
   const auto loc = expr->getExprLoc();
+  const auto range = expr->getSourceRange();
   const bool hasStatusArg =
       expr->getArg(numArgs - 1)->getType()->isUnsignedIntegerType();
 
@@ -4582,14 +4584,15 @@ SpirvEmitter::processTextureSampleGather(const CXXMemberCallExpr *expr,
                              constOffset, varOffset,
                              /*constOffsets*/ nullptr, /*sampleNumber*/ nullptr,
                              /*minLod*/ clamp, status,
-                             expr->getCallee()->getLocStart());
+                             expr->getCallee()->getLocStart(), range);
   } else {
     return spvBuilder.createImageGather(
         retType, imageType, image, sampler, coordinate,
         // .Gather() doc says we return four components of red data.
         spvBuilder.getConstantInt(astContext.IntTy, llvm::APInt(32, 0)),
         /*compareVal*/ nullptr, constOffset, varOffset,
-        /*constOffsets*/ nullptr, /*sampleNumber*/ nullptr, status, loc);
+        /*constOffsets*/ nullptr, /*sampleNumber*/ nullptr, status, loc,
+        range);
   }
 }
 
