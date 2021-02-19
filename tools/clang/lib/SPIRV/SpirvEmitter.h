@@ -332,7 +332,7 @@ private:
   turnIntoElementPtr(QualType baseType, SpirvInstruction *base,
                      QualType elemType,
                      const llvm::SmallVector<SpirvInstruction *, 4> &indices,
-                     SourceLocation loc);
+                     SourceLocation loc, SourceRange range = {});
 
 private:
   /// Validates that vk::* attributes are used correctly and returns false if

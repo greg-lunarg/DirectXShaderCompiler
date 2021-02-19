@@ -173,7 +173,7 @@ public:
   /// <result-type> from the given pointer. Returns the instruction pointer for
   /// the loaded value.
   SpirvLoad *createLoad(QualType resultType, SpirvInstruction *pointer,
-                        SourceLocation loc);
+                        SourceLocation loc, SourceRange range = {});
   SpirvLoad *createLoad(const SpirvType *resultType, SpirvInstruction *pointer,
                         SourceLocation loc);
 
@@ -202,7 +202,7 @@ public:
   SpirvAccessChain *
   createAccessChain(QualType resultType, SpirvInstruction *base,
                     llvm::ArrayRef<SpirvInstruction *> indexes,
-                    SourceLocation loc);
+                    SourceLocation loc, SourceRange range = {});
 
   /// \brief Creates a unary operation with the given SPIR-V opcode. Returns
   /// the instruction pointer for the result.

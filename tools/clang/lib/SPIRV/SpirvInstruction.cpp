@@ -372,8 +372,9 @@ SpirvUnreachable::SpirvUnreachable(SourceLocation loc)
 
 SpirvAccessChain::SpirvAccessChain(QualType resultType, SourceLocation loc,
                                    SpirvInstruction *baseInst,
-                                   llvm::ArrayRef<SpirvInstruction *> indexVec)
-    : SpirvInstruction(IK_AccessChain, spv::Op::OpAccessChain, resultType, loc),
+                                   llvm::ArrayRef<SpirvInstruction *> indexVec,
+                                   SourceRange range)
+    : SpirvInstruction(IK_AccessChain, spv::Op::OpAccessChain, resultType, loc, range),
       base(baseInst), indices(indexVec.begin(), indexVec.end()) {}
 
 SpirvAtomic::SpirvAtomic(spv::Op op, QualType resultType, SourceLocation loc,
@@ -729,9 +730,9 @@ SpirvImageTexelPointer::SpirvImageTexelPointer(QualType resultType,
       image(imageInst), coordinate(coordinateInst), sample(sampleInst) {}
 
 SpirvLoad::SpirvLoad(QualType resultType, SourceLocation loc,
-                     SpirvInstruction *pointerInst,
+                     SpirvInstruction *pointerInst, SourceRange range,
                      llvm::Optional<spv::MemoryAccessMask> mask)
-    : SpirvInstruction(IK_Load, spv::Op::OpLoad, resultType, loc),
+    : SpirvInstruction(IK_Load, spv::Op::OpLoad, resultType, loc, range),
       pointer(pointerInst), memoryAccess(mask) {}
 
 SpirvCopyObject::SpirvCopyObject(QualType resultType, SourceLocation loc,

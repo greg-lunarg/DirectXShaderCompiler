@@ -883,7 +883,8 @@ SpirvInstruction *SpirvEmitter::loadIfGLValue(const Expr *expr,
         declIdMapper.getCTBufferPushConstantType(declContext), info,
         expr->getExprLoc());
   } else {
-    loadedInstr = spvBuilder.createLoad(exprType, info, expr->getExprLoc());
+    loadedInstr = spvBuilder.createLoad(exprType, info, expr->getExprLoc(),
+                                        expr->getSourceRange());
   }
   assert(loadedInstr);
 
@@ -5007,7 +5008,7 @@ SpirvInstruction *SpirvEmitter::doMemberExpr(const MemberExpr *expr) {
 
   if (instr && !indices.empty()) {
     instr = turnIntoElementPtr(base->getType(), instr, expr->getType(), indices,
-                               base->getExprLoc());
+                               base->getExprLoc(), expr->getSourceRange());
   }
 
   return instr;
@@ -6809,7 +6810,7 @@ const Expr *SpirvEmitter::collectArrayStructIndices(
 SpirvInstruction *SpirvEmitter::turnIntoElementPtr(
     QualType baseType, SpirvInstruction *base, QualType elemType,
     const llvm::SmallVector<SpirvInstruction *, 4> &indices,
-    SourceLocation loc) {
+    SourceLocation loc, SourceRange range) {
   // If this is a rvalue, we need a temporary object to hold it
   // so that we can get access chain from it.
   const bool needTempVar = base->isRValue();
@@ -6824,7 +6825,7 @@ SpirvInstruction *SpirvEmitter::turnIntoElementPtr(
     accessChainBase = var;
   }
 
-  base = spvBuilder.createAccessChain(elemType, accessChainBase, indices, loc);
+  base = spvBuilder.createAccessChain(elemType, accessChainBase, indices, loc, range);
 
   // Okay, this part seems weird, but it is intended:
   // If the base is originally a rvalue, the whole AST involving the base
