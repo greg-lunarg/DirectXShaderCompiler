@@ -818,7 +818,8 @@ class SpirvAccessChain : public SpirvInstruction {
 public:
   SpirvAccessChain(QualType resultType, SourceLocation loc,
                    SpirvInstruction *base,
-                   llvm::ArrayRef<SpirvInstruction *> indexVec);
+                   llvm::ArrayRef<SpirvInstruction *> indexVec,
+                   SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvAccessChain)
 
@@ -1638,6 +1639,7 @@ private:
 class SpirvLoad : public SpirvInstruction {
 public:
   SpirvLoad(QualType resultType, SourceLocation loc, SpirvInstruction *pointer,
+            SourceRange range = {},
             llvm::Optional<spv::MemoryAccessMask> mask = llvm::None);
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvLoad)

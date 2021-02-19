@@ -189,9 +189,10 @@ SpirvVectorShuffle *SpirvBuilder::createVectorShuffle(
 
 SpirvLoad *SpirvBuilder::createLoad(QualType resultType,
                                     SpirvInstruction *pointer,
-                                    SourceLocation loc) {
+                                    SourceLocation loc,
+                                    SourceRange range) {
   assert(insertPoint && "null insert point");
-  auto *instruction = new (context) SpirvLoad(resultType, loc, pointer);
+  auto *instruction = new (context) SpirvLoad(resultType, loc, pointer, range);
   instruction->setStorageClass(pointer->getStorageClass());
   instruction->setLayoutRule(pointer->getLayoutRule());
   instruction->setRValue(true);
@@ -302,10 +303,10 @@ SpirvAccessChain *SpirvBuilder::createAccessChain(
 SpirvAccessChain *
 SpirvBuilder::createAccessChain(QualType resultType, SpirvInstruction *base,
                                 llvm::ArrayRef<SpirvInstruction *> indexes,
-                                SourceLocation loc) {
+                                SourceLocation loc, SourceRange range) {
   assert(insertPoint && "null insert point");
   auto *instruction =
-      new (context) SpirvAccessChain(resultType, loc, base, indexes);
+      new (context) SpirvAccessChain(resultType, loc, base, indexes, range);
   instruction->setStorageClass(base->getStorageClass());
   instruction->setLayoutRule(base->getLayoutRule());
   instruction->setContainsAliasComponent(base->containsAliasComponent());
