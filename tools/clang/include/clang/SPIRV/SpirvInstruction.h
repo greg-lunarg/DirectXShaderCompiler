@@ -1482,7 +1482,8 @@ public:
                SpirvInstruction *sample = nullptr,
                SpirvInstruction *minLod = nullptr,
                SpirvInstruction *component = nullptr,
-               SpirvInstruction *texelToWrite = nullptr);
+               SpirvInstruction *texelToWrite = nullptr,
+               SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvImageOp)
 
@@ -1686,7 +1687,8 @@ private:
 class SpirvSampledImage : public SpirvInstruction {
 public:
   SpirvSampledImage(QualType resultType, SourceLocation loc,
-                    SpirvInstruction *image, SpirvInstruction *sampler);
+                    SpirvInstruction *image, SpirvInstruction *sampler,
+                    SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvSampledImage)
 

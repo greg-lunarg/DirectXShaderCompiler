@@ -390,10 +390,11 @@ SpirvAtomic *SpirvBuilder::createAtomicCompareExchange(
 SpirvSampledImage *SpirvBuilder::createSampledImage(QualType imageType,
                                                     SpirvInstruction *image,
                                                     SpirvInstruction *sampler,
-                                                    SourceLocation loc) {
+                                                    SourceLocation loc,
+                                                    SourceRange range) {
   assert(insertPoint && "null insert point");
   auto *sampledImage =
-      new (context) SpirvSampledImage(imageType, loc, image, sampler);
+      new (context) SpirvSampledImage(imageType, loc, image, sampler, range);
   insertPoint->addInstruction(sampledImage);
   return sampledImage;
 }
@@ -454,7 +455,7 @@ SpirvInstruction *SpirvBuilder::createImageSample(
     SpirvInstruction *constOffset, SpirvInstruction *varOffset,
     SpirvInstruction *constOffsets, SpirvInstruction *sample,
     SpirvInstruction *minLod, SpirvInstruction *residencyCode,
-    SourceLocation loc) {
+    SourceLocation loc, SourceRange range) {
   assert(insertPoint && "null insert point");
 
   // The Lod and Grad image operands requires explicit-lod instructions.
@@ -481,7 +482,7 @@ SpirvInstruction *SpirvBuilder::createImageSample(
   assert(lod == nullptr || minLod == nullptr);
 
   // An OpSampledImage is required to do the image sampling.
-  auto *sampledImage = createSampledImage(imageType, image, sampler, loc);
+  auto *sampledImage = createSampledImage(imageType, image, sampler, loc, range);
 
   const auto mask = composeImageOperandsMask(
       bias, lod, grad, constOffset, varOffset, constOffsets, sample, minLod);
@@ -489,7 +490,8 @@ SpirvInstruction *SpirvBuilder::createImageSample(
   auto *imageSampleInst = new (context)
       SpirvImageOp(op, texelType, loc, sampledImage, coordinate, mask,
                    compareVal, bias, lod, grad.first, grad.second, constOffset,
-                   varOffset, constOffsets, sample, minLod);
+                   varOffset, constOffsets, sample, minLod, nullptr, nullptr,
+                   range);
   insertPoint->addInstruction(imageSampleInst);
 
   if (isSparse) {
@@ -563,11 +565,12 @@ SpirvInstruction *SpirvBuilder::createImageGather(
     SpirvInstruction *component, SpirvInstruction *compareVal,
     SpirvInstruction *constOffset, SpirvInstruction *varOffset,
     SpirvInstruction *constOffsets, SpirvInstruction *sample,
-    SpirvInstruction *residencyCode, SourceLocation loc) {
+    SpirvInstruction *residencyCode, SourceLocation loc,
+    SourceRange range) {
   assert(insertPoint && "null insert point");
 
   // An OpSampledImage is required to do the image sampling.
-  auto *sampledImage = createSampledImage(imageType, image, sampler, loc);
+  auto *sampledImage = createSampledImage(imageType, image, sampler, loc, range);
 
   // TODO: Update ImageGather to accept minLod if necessary.
   const auto mask = composeImageOperandsMask(
@@ -588,7 +591,7 @@ SpirvInstruction *SpirvBuilder::createImageGather(
       op, texelType, loc, sampledImage, coordinate, mask, compareVal,
       /*bias*/ nullptr, /*lod*/ nullptr, /*gradDx*/ nullptr,
       /*gradDy*/ nullptr, constOffset, varOffset, constOffsets, sample,
-      /*minLod*/ nullptr, component);
+      /*minLod*/ nullptr, component, nullptr, range);
   insertPoint->addInstruction(imageInstruction);
 
   if (residencyCode) {

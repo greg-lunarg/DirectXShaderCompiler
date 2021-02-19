@@ -988,7 +988,7 @@ private:
                     SpirvInstruction *constOffset, SpirvInstruction *varOffset,
                     SpirvInstruction *constOffsets, SpirvInstruction *sample,
                     SpirvInstruction *minLod, SpirvInstruction *residencyCodeId,
-                    SourceLocation loc);
+                    SourceLocation loc, SourceRange range = {});
 
 private:
   /// \brief If the given FunctionDecl is not already in the workQueue, creates
