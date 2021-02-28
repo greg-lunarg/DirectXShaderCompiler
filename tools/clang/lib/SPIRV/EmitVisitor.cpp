@@ -244,8 +244,10 @@ void EmitVisitor::emitDebugLine(spv::Op op, const SourceLocation &loc,
   // immediately precede either an OpBranch or OpBranchConditional instruction.
   if (lastOpWasMergeInst) {
     lastOpWasMergeInst = false;
-    debugLine = 0;
-    debugColumn = 0;
+    debugLineStart = 0;
+    debugColumnStart = 0;
+    debugLineEnd = 0;
+    debugColumnEnd = 0;
     return;
   }
 
@@ -270,7 +272,7 @@ void EmitVisitor::emitDebugLine(spv::Op op, const SourceLocation &loc,
   // If no SourceLocation is provided, we have to emit OpNoLine to
   // specify the previous OpLine is not applied to this instruction.
   if (loc == SourceLocation()) {
-    if (!isDebugScope && (debugLine != 0 || debugColumn != 0)) {
+    if (!isDebugScope && (debugLineStart != 0 || debugColumnStart != 0)) {
       curInst.clear();
       if (spvOptions.debugInfoVulkan) {
         curInst.push_back(static_cast<uint32_t>(spv::Op::OpExtInst));
@@ -284,8 +286,10 @@ void EmitVisitor::emitDebugLine(spv::Op op, const SourceLocation &loc,
       curInst[0] |= static_cast<uint32_t>(curInst.size()) << 16;
       section->insert(section->end(), curInst.begin(), curInst.end());
     }
-    debugLine = 0;
-    debugColumn = 0;
+    debugLineStart = 0;
+    debugColumnStart = 0;
+    debugLineEnd = 0;
+    debugColumnEnd = 0;
     return;
   }
 
@@ -295,19 +299,37 @@ void EmitVisitor::emitDebugLine(spv::Op op, const SourceLocation &loc,
   if (fileName)
     fileId = getOrCreateOpStringId(fileName);
 
-  uint32_t line = sm.getPresumedLineNumber(loc);
-  uint32_t column = sm.getPresumedColumnNumber(loc);
+  uint32_t lineStart;
+  uint32_t lineEnd;
+  uint32_t columnStart;
+  uint32_t columnEnd;
+  if (!spvOptions.debugInfoVulkan || range.isInvalid()) {
+    lineStart = sm.getPresumedLineNumber(loc);
+    columnStart = sm.getPresumedColumnNumber(loc);
+    lineEnd = lineStart;
+    columnEnd = columnStart;
+  } else {
+    SourceLocation locStart = range.getBegin();
+    lineStart = sm.getPresumedLineNumber(locStart);
+    columnStart = sm.getPresumedColumnNumber(locStart);
+    SourceLocation locEnd = range.getEnd();
+    lineEnd = sm.getPresumedLineNumber(locEnd);
+    columnEnd = sm.getPresumedColumnNumber(locEnd);
+  }
 
   // If it is a terminator, just reset the last line and column because
   // a terminator makes the OpLine not effective.
   bool resetLine = (op >= spv::Op::OpBranch && op <= spv::Op::OpUnreachable) ||
                    op == spv::Op::OpTerminateInvocation;
 
-  if (!fileId || !line || !column ||
-      (line == debugLine && column == debugColumn)) {
+  if (!fileId || !lineStart || !columnStart ||
+      (lineStart == debugLineStart && columnStart == debugColumnStart &&
+       lineEnd == debugLineEnd && columnEnd == debugColumnEnd)) {
     if (resetLine) {
-      debugLine = 0;
-      debugColumn = 0;
+      debugLineStart = 0;
+      debugColumnStart = 0;
+      debugLineEnd = 0;
+      debugColumnEnd = 0;
     }
     return;
   }
@@ -315,12 +337,16 @@ void EmitVisitor::emitDebugLine(spv::Op op, const SourceLocation &loc,
   assert(section);
 
   if (resetLine) {
-    debugLine = 0;
-    debugColumn = 0;
+    debugLineStart = 0;
+    debugColumnStart = 0;
+    debugLineEnd = 0;
+    debugColumnEnd = 0;
   } else {
     // Keep the last line and column to avoid printing the duplicated OpLine.
-    debugLine = line;
-    debugColumn = column;
+    debugLineStart = lineStart;
+    debugColumnStart = columnStart;
+    debugLineEnd = lineEnd;
+    debugColumnEnd = columnEnd;
   }
 
   if (emittedSource[fileId] == 0) {
@@ -345,8 +371,8 @@ void EmitVisitor::emitDebugLine(spv::Op op, const SourceLocation &loc,
   if (!spvOptions.debugInfoVulkan) {
     curInst.push_back(static_cast<uint32_t>(spv::Op::OpLine));
     curInst.push_back(fileId);
-    curInst.push_back(line);
-    curInst.push_back(column);
+    curInst.push_back(lineStart);
+    curInst.push_back(columnStart);
   } else {
     curInst.push_back(static_cast<uint32_t>(spv::Op::OpExtInst));
     curInst.push_back(typeHandler.emitType(context.getVoidType()));
@@ -354,32 +380,10 @@ void EmitVisitor::emitDebugLine(spv::Op op, const SourceLocation &loc,
     curInst.push_back(debugInfoExtInstId);
     curInst.push_back(103u); // DebugLine
     curInst.push_back(emittedSource[fileId]);
-    uint32_t bLineEncode;
-    uint32_t eLineEncode;
-    uint32_t bColEncode;
-    uint32_t eColEncode;
-    if (range.isInvalid()) {
-	  // No range, just use loc for begin and end
-      bLineEncode = getLiteralEncodedForDebugInfo(line);
-      eLineEncode = bLineEncode;
-      bColEncode = getLiteralEncodedForDebugInfo(column);
-      eColEncode = bColEncode;
-    } else {
-      SourceLocation bLoc = range.getBegin();
-      uint32_t bLine = sm.getPresumedLineNumber(bLoc);
-      uint32_t bCol = sm.getPresumedColumnNumber(bLoc);
-      bLineEncode = getLiteralEncodedForDebugInfo(bLine);
-      bColEncode = getLiteralEncodedForDebugInfo(bCol);
-      SourceLocation eLoc = range.getEnd();
-      uint32_t eLine = sm.getPresumedLineNumber(eLoc);
-      uint32_t eCol = sm.getPresumedColumnNumber(eLoc);
-      eLineEncode = getLiteralEncodedForDebugInfo(eLine);
-      eColEncode = getLiteralEncodedForDebugInfo(eCol);
-    }
-    curInst.push_back(bLineEncode);
-    curInst.push_back(eLineEncode);
-    curInst.push_back(bColEncode);
-    curInst.push_back(eColEncode);
+    curInst.push_back(getLiteralEncodedForDebugInfo(lineStart));
+    curInst.push_back(getLiteralEncodedForDebugInfo(lineEnd));
+    curInst.push_back(getLiteralEncodedForDebugInfo(columnStart));
+    curInst.push_back(getLiteralEncodedForDebugInfo(columnEnd));
   }
   curInst[0] |= static_cast<uint32_t>(curInst.size()) << 16;
   section->insert(section->end(), curInst.begin(), curInst.end());
