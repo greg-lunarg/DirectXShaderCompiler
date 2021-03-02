@@ -61,7 +61,7 @@ public:
 
   void doDecl(const Decl *decl);
   void doStmt(const Stmt *stmt, llvm::ArrayRef<const Attr *> attrs = {});
-  SpirvInstruction *doExpr(const Expr *expr);
+  SpirvInstruction *doExpr(const Expr *expr, SourceRange rangeOverride = {});
 
   /// Processes the given expression and emits SPIR-V instructions. If the
   /// result is a GLValue, does an additional load.
@@ -109,7 +109,8 @@ private:
   SpirvInstruction *doExtMatrixElementExpr(const ExtMatrixElementExpr *expr);
   SpirvInstruction *doHLSLVectorElementExpr(const HLSLVectorElementExpr *expr);
   SpirvInstruction *doInitListExpr(const InitListExpr *expr);
-  SpirvInstruction *doMemberExpr(const MemberExpr *expr);
+  SpirvInstruction *doMemberExpr(const MemberExpr *expr,
+                                 SourceRange rangeOverride = {});
   SpirvInstruction *doUnaryOperator(const UnaryOperator *expr);
   SpirvInstruction *
   doUnaryExprOrTypeTraitExpr(const UnaryExprOrTypeTraitExpr *expr);
