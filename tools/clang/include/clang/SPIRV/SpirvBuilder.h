@@ -175,7 +175,7 @@ public:
   SpirvLoad *createLoad(QualType resultType, SpirvInstruction *pointer,
                         SourceLocation loc, SourceRange range = {});
   SpirvLoad *createLoad(const SpirvType *resultType, SpirvInstruction *pointer,
-                        SourceLocation loc);
+                        SourceLocation loc, SourceRange range = {});
 
   /// \brief Creates an OpCopyObject instruction from the given pointer.
   SpirvCopyObject *createCopyObject(QualType resultType,

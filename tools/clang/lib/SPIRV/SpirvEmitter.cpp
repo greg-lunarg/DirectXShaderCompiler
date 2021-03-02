@@ -5111,7 +5111,8 @@ SpirvEmitter::doHLSLVectorElementExpr(const HLSLVectorElementExpr *expr) {
           astContext.IntTy, llvm::APInt(32, accessor.Swz0, true));
       // We need a lvalue here. Do not try to load.
       return spvBuilder.createAccessChain(type, baseInfo, {index},
-                                          baseExpr->getLocStart());
+                                          baseExpr->getLocStart(),
+                                          expr->getSourceRange());
     } else { // E.g., (v + w).x;
       // The original base vector may not be a rvalue. Need to load it if
       // it is lvalue since ImplicitCastExpr (LValueToRValue) will be missing
