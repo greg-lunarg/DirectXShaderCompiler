@@ -225,9 +225,11 @@ SpirvCopyObject *SpirvBuilder::createCopyObject(QualType resultType,
 
 SpirvLoad *SpirvBuilder::createLoad(const SpirvType *resultType,
                                     SpirvInstruction *pointer,
-                                    SourceLocation loc) {
+                                    SourceLocation loc,
+                                    SourceRange range) {
   assert(insertPoint && "null insert point");
-  auto *instruction = new (context) SpirvLoad(/*QualType*/ {}, loc, pointer);
+  auto *instruction =
+      new (context) SpirvLoad(/*QualType*/ {}, loc, pointer, range);
   instruction->setResultType(resultType);
   instruction->setStorageClass(pointer->getStorageClass());
   // Special case for legalization. We could have point-to-pointer types.
