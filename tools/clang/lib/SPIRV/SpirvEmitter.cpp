@@ -769,7 +769,8 @@ void SpirvEmitter::doStmt(const Stmt *stmt,
   }
 }
 
-SpirvInstruction *SpirvEmitter::doExpr(const Expr *expr) {
+SpirvInstruction *SpirvEmitter::doExpr(const Expr *expr,
+                                       SourceRange rangeOverride) {
   SpirvInstruction *result = nullptr;
   expr = expr->IgnoreParens();
 
@@ -777,7 +778,7 @@ SpirvInstruction *SpirvEmitter::doExpr(const Expr *expr) {
     result = declIdMapper.getDeclEvalInfo(declRefExpr->getDecl(),
                                           expr->getLocStart());
   } else if (const auto *memberExpr = dyn_cast<MemberExpr>(expr)) {
-    result = doMemberExpr(memberExpr);
+    result = doMemberExpr(memberExpr, rangeOverride);
   } else if (const auto *castExpr = dyn_cast<CastExpr>(expr)) {
     result = doCastExpr(castExpr);
   } else if (const auto *initListExpr = dyn_cast<InitListExpr>(expr)) {
@@ -1041,9 +1042,9 @@ void SpirvEmitter::doFunctionDecl(const FunctionDecl *decl) {
     uint32_t flags = 3u;
     // The line number in the source program at which the function scope begins.
     auto scopeLine = sm.getPresumedLineNumber(decl->getBody()->getLocStart());
-    debugFunction = spvBuilder.createDebugFunction(
-        decl, debugFuncName, source, line, column, parentScope, "", flags,
-        scopeLine, func);
+    debugFunction = spvBuilder.createDebugFunction(decl, debugFuncName, source,
+                                                   line, column, parentScope,
+                                                   "", flags, scopeLine, func);
     func->setDebugScope(new (spvContext) SpirvDebugScope(debugFunction));
 
     spvContext.pushDebugLexicalScope(info, debugFunction);
@@ -4310,11 +4311,10 @@ SpirvInstruction *SpirvEmitter::createImageSample(
   // SampleDref* instructions in SPIR-V always return a scalar.
   // They also have the correct type in HLSL.
   if (compareVal) {
-    return spvBuilder.createImageSample(retType, imageType, image, sampler,
-                                        coordinate, compareVal, bias, lod, grad,
-                                        constOffset, varOffset, constOffsets,
-                                        sample, minLod, residencyCodeId, loc,
-                                        range);
+    return spvBuilder.createImageSample(
+        retType, imageType, image, sampler, coordinate, compareVal, bias, lod,
+        grad, constOffset, varOffset, constOffsets, sample, minLod,
+        residencyCodeId, loc, range);
   }
 
   // Non-Dref Sample instructions in SPIR-V must always return a vec4.
@@ -4425,8 +4425,7 @@ SpirvEmitter::processTextureSampleGather(const CXXMemberCallExpr *expr,
         // .Gather() doc says we return four components of red data.
         spvBuilder.getConstantInt(astContext.IntTy, llvm::APInt(32, 0)),
         /*compareVal*/ nullptr, constOffset, varOffset,
-        /*constOffsets*/ nullptr, /*sampleNumber*/ nullptr, status, loc,
-        range);
+        /*constOffsets*/ nullptr, /*sampleNumber*/ nullptr, status, loc, range);
   }
 }
 
@@ -4922,7 +4921,7 @@ SpirvEmitter::doHLSLVectorElementExpr(const HLSLVectorElementExpr *expr) {
   // times, we need composite construct instructions.
 
   if (accessorSize == 1) {
-    auto *baseInfo = doExpr(baseExpr);
+    auto *baseInfo = doExpr(baseExpr, expr->getSourceRange());
 
     if (!baseInfo || baseSize == 1) {
       // Selecting one element from a size-1 vector. The underlying vector is
@@ -5004,15 +5003,19 @@ SpirvInstruction *SpirvEmitter::doInitListExpr(const InitListExpr *expr) {
   return result;
 }
 
-SpirvInstruction *SpirvEmitter::doMemberExpr(const MemberExpr *expr) {
+SpirvInstruction *SpirvEmitter::doMemberExpr(const MemberExpr *expr,
+                                             SourceRange rangeOverride) {
   llvm::SmallVector<SpirvInstruction *, 4> indices;
   const Expr *base = collectArrayStructIndices(
       expr, /*rawIndex*/ false, /*rawIndices*/ nullptr, &indices);
   auto *instr = loadIfAliasVarRef(base);
 
   if (instr && !indices.empty()) {
+    SourceRange range = (rangeOverride != SourceRange())
+                            ? rangeOverride
+                            : expr->getSourceRange();
     instr = turnIntoElementPtr(base->getType(), instr, expr->getType(), indices,
-                               base->getExprLoc(), expr->getSourceRange());
+                               base->getExprLoc(), range);
   }
 
   return instr;
@@ -5652,7 +5655,7 @@ SpirvInstruction *SpirvEmitter::processBinaryOp(
         val = castToType(val, computationType, lhsType, lhs->getExprLoc());
     } else {
       val = spvBuilder.createBinaryOp(spvOp, resultType, lhsVal, rhsVal, loc,
-		                              sourceRange);
+                                      sourceRange);
     }
 
     val->setRValue();
@@ -6813,8 +6816,8 @@ const Expr *SpirvEmitter::collectArrayStructIndices(
 
 SpirvInstruction *SpirvEmitter::turnIntoElementPtr(
     QualType baseType, SpirvInstruction *base, QualType elemType,
-    const llvm::SmallVector<SpirvInstruction *, 4> &indices,
-    SourceLocation loc, SourceRange range) {
+    const llvm::SmallVector<SpirvInstruction *, 4> &indices, SourceLocation loc,
+    SourceRange range) {
   // If this is a rvalue, we need a temporary object to hold it
   // so that we can get access chain from it.
   const bool needTempVar = base->isRValue();
@@ -6829,7 +6832,8 @@ SpirvInstruction *SpirvEmitter::turnIntoElementPtr(
     accessChainBase = var;
   }
 
-  base = spvBuilder.createAccessChain(elemType, accessChainBase, indices, loc, range);
+  base = spvBuilder.createAccessChain(elemType, accessChainBase, indices, loc,
+                                      range);
 
   // Okay, this part seems weird, but it is intended:
   // If the base is originally a rvalue, the whole AST involving the base
