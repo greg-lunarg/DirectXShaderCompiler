@@ -251,9 +251,10 @@ SpirvLoad *SpirvBuilder::createLoad(const SpirvType *resultType,
 }
 
 void SpirvBuilder::createStore(SpirvInstruction *address,
-                               SpirvInstruction *value, SourceLocation loc) {
+                               SpirvInstruction *value, SourceLocation loc,
+                               SourceRange range) {
   assert(insertPoint && "null insert point");
-  auto *instruction = new (context) SpirvStore(loc, address, value);
+  auto *instruction = new (context) SpirvStore(loc, address, value, llvm::None, range);
   insertPoint->addInstruction(instruction);
 }
 
@@ -735,15 +736,17 @@ void SpirvBuilder::createConditionalBranch(
   insertPoint->addInstruction(branchConditional);
 }
 
-void SpirvBuilder::createReturn(SourceLocation loc) {
+void SpirvBuilder::createReturn(SourceLocation loc,
+                                SourceRange range) {
   assert(insertPoint && "null insert point");
-  insertPoint->addInstruction(new (context) SpirvReturn(loc));
+  insertPoint->addInstruction(new (context) SpirvReturn(loc, nullptr, range));
 }
 
 void SpirvBuilder::createReturnValue(SpirvInstruction *value,
-                                     SourceLocation loc) {
+                                     SourceLocation loc,
+                                     SourceRange range) {
   assert(insertPoint && "null insert point");
-  insertPoint->addInstruction(new (context) SpirvReturn(loc, value));
+  insertPoint->addInstruction(new (context) SpirvReturn(loc, value, range));
 }
 
 SpirvInstruction *

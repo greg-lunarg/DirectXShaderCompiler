@@ -652,7 +652,8 @@ public:
   }
 
 protected:
-  SpirvTerminator(Kind kind, spv::Op opcode, SourceLocation loc);
+  SpirvTerminator(Kind kind, spv::Op opcode, SourceLocation loc,
+                  SourceRange range = {});
 };
 
 /// \brief Base class for branching instructions
@@ -744,7 +745,8 @@ public:
 /// \brief OpReturn and OpReturnValue instructions
 class SpirvReturn : public SpirvTerminator {
 public:
-  SpirvReturn(SourceLocation loc, SpirvInstruction *retVal = 0);
+  SpirvReturn(SourceLocation loc, SpirvInstruction *retVal = 0,
+              SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvReturn)
 
@@ -1473,21 +1475,18 @@ private:
 ///
 class SpirvImageOp : public SpirvInstruction {
 public:
-  SpirvImageOp(spv::Op opcode, QualType resultType, SourceLocation loc,
-               SpirvInstruction *image, SpirvInstruction *coordinate,
-               spv::ImageOperandsMask mask, SpirvInstruction *dref = nullptr,
-               SpirvInstruction *bias = nullptr,
-               SpirvInstruction *lod = nullptr,
-               SpirvInstruction *gradDx = nullptr,
-               SpirvInstruction *gradDy = nullptr,
-               SpirvInstruction *constOffset = nullptr,
-               SpirvInstruction *offset = nullptr,
-               SpirvInstruction *constOffsets = nullptr,
-               SpirvInstruction *sample = nullptr,
-               SpirvInstruction *minLod = nullptr,
-               SpirvInstruction *component = nullptr,
-               SpirvInstruction *texelToWrite = nullptr,
-               SourceRange range = {});
+  SpirvImageOp(
+      spv::Op opcode, QualType resultType, SourceLocation loc,
+      SpirvInstruction *image, SpirvInstruction *coordinate,
+      spv::ImageOperandsMask mask, SpirvInstruction *dref = nullptr,
+      SpirvInstruction *bias = nullptr, SpirvInstruction *lod = nullptr,
+      SpirvInstruction *gradDx = nullptr, SpirvInstruction *gradDy = nullptr,
+      SpirvInstruction *constOffset = nullptr,
+      SpirvInstruction *offset = nullptr,
+      SpirvInstruction *constOffsets = nullptr,
+      SpirvInstruction *sample = nullptr, SpirvInstruction *minLod = nullptr,
+      SpirvInstruction *component = nullptr,
+      SpirvInstruction *texelToWrite = nullptr, SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvImageOp)
 
@@ -1790,7 +1789,8 @@ class SpirvStore : public SpirvInstruction {
 public:
   SpirvStore(SourceLocation loc, SpirvInstruction *pointer,
              SpirvInstruction *object,
-             llvm::Optional<spv::MemoryAccessMask> mask = llvm::None);
+             llvm::Optional<spv::MemoryAccessMask> mask = llvm::None,
+             SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvStore)
 

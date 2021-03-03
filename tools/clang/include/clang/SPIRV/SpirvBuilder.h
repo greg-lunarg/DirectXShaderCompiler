@@ -184,7 +184,7 @@ public:
   /// \brief Creates a store instruction storing the given value into the given
   /// address.
   void createStore(SpirvInstruction *address, SpirvInstruction *value,
-                   SourceLocation loc);
+                   SourceLocation loc, SourceRange range = {});
 
   /// \brief Creates a function call instruction and returns the instruction
   /// pointer for the return value.
@@ -395,9 +395,10 @@ public:
       spv::LoopControlMask loopControl = spv::LoopControlMask::MaskNone);
 
   /// \brief Creates a return instruction.
-  void createReturn(SourceLocation);
+  void createReturn(SourceLocation, SourceRange range = {});
   /// \brief Creates a return value instruction.
-  void createReturnValue(SpirvInstruction *value, SourceLocation);
+  void createReturnValue(SpirvInstruction *value, SourceLocation,
+                         SourceRange range = {});
 
   /// \brief Creates an OpExtInst instruction for the GLSL extended instruction
   /// set, with the given instruction number, and operands. Returns the

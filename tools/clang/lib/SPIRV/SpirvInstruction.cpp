@@ -322,8 +322,9 @@ SpirvSelectionMerge::SpirvSelectionMerge(SourceLocation loc,
     : SpirvMerge(IK_SelectionMerge, spv::Op::OpSelectionMerge, loc, mergeBlock),
       selControlMask(mask) {}
 
-SpirvTerminator::SpirvTerminator(Kind kind, spv::Op op, SourceLocation loc)
-    : SpirvInstruction(kind, op, QualType(), loc) {}
+SpirvTerminator::SpirvTerminator(Kind kind, spv::Op op, SourceLocation loc,
+                                 SourceRange range)
+    : SpirvInstruction(kind, op, QualType(), loc, range) {}
 
 SpirvBranching::SpirvBranching(Kind kind, spv::Op op, SourceLocation loc)
     : SpirvTerminator(kind, op, loc) {}
@@ -341,9 +342,11 @@ SpirvBranchConditional::SpirvBranchConditional(SourceLocation loc,
 SpirvKill::SpirvKill(SourceLocation loc)
     : SpirvTerminator(IK_Kill, spv::Op::OpKill, loc) {}
 
-SpirvReturn::SpirvReturn(SourceLocation loc, SpirvInstruction *retVal)
+SpirvReturn::SpirvReturn(SourceLocation loc, SpirvInstruction *retVal,
+                         SourceRange range)
     : SpirvTerminator(IK_Return,
-                      retVal ? spv::Op::OpReturnValue : spv::Op::OpReturn, loc),
+                      retVal ? spv::Op::OpReturnValue : spv::Op::OpReturn, loc,
+                      range),
       returnValue(retVal) {}
 
 SpirvSwitch::SpirvSwitch(
@@ -776,8 +779,9 @@ SpirvSpecConstantUnaryOp::SpirvSpecConstantUnaryOp(spv::Op specConstantOp,
 
 SpirvStore::SpirvStore(SourceLocation loc, SpirvInstruction *pointerInst,
                        SpirvInstruction *objectInst,
-                       llvm::Optional<spv::MemoryAccessMask> mask)
-    : SpirvInstruction(IK_Store, spv::Op::OpStore, QualType(), loc),
+                       llvm::Optional<spv::MemoryAccessMask> mask,
+                       SourceRange range)
+    : SpirvInstruction(IK_Store, spv::Op::OpStore, QualType(), loc, range),
       pointer(pointerInst), object(objectInst), memoryAccess(mask) {}
 
 SpirvUnaryOp::SpirvUnaryOp(spv::Op opcode, QualType resultType,
