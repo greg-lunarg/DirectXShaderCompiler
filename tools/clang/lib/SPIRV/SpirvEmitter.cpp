@@ -1951,7 +1951,8 @@ void SpirvEmitter::doReturnStmt(const ReturnStmt *stmt) {
           spvBuilder.createLoad(retType, tempVar, retVal->getLocEnd()),
           stmt->getReturnLoc());
     } else {
-      spvBuilder.createReturnValue(retInfo, stmt->getReturnLoc());
+      spvBuilder.createReturnValue(retInfo, stmt->getReturnLoc(),
+                                   {stmt->getReturnLoc(), retVal->getLocEnd()});
     }
   } else {
     spvBuilder.createReturn(stmt->getReturnLoc());
@@ -2071,7 +2072,8 @@ SpirvInstruction *SpirvEmitter::doBinaryOperator(const BinaryOperator *expr) {
     tryToAssignCounterVar(expr->getLHS(), expr->getRHS());
 
     return processAssignment(expr->getLHS(), loadIfGLValue(expr->getRHS()),
-                             /*isCompoundAssignment=*/false);
+                             /*isCompoundAssignment=*/false, nullptr,
+                             expr->getSourceRange());
   }
 
   // Try to optimize floatMxN * float and floatN * float case
@@ -5262,7 +5264,7 @@ spv::Op SpirvEmitter::translateOp(BinaryOperator::Opcode op, QualType type) {
 SpirvInstruction *
 SpirvEmitter::processAssignment(const Expr *lhs, SpirvInstruction *rhs,
                                 const bool isCompoundAssignment,
-                                SpirvInstruction *lhsPtr) {
+                                SpirvInstruction *lhsPtr, SourceRange range) {
   lhs = lhs->IgnoreParenNoopCasts(astContext);
 
   // Assigning to vector swizzling should be handled differently.
@@ -5293,9 +5295,9 @@ SpirvEmitter::processAssignment(const Expr *lhs, SpirvInstruction *rhs,
   // Normal assignment procedure
 
   if (!lhsPtr)
-    lhsPtr = doExpr(lhs);
+    lhsPtr = doExpr(lhs, range);
 
-  storeValue(lhsPtr, rhs, lhs->getType(), lhs->getLocStart());
+  storeValue(lhsPtr, rhs, lhs->getType(), lhs->getLocStart(), range);
 
   // Plain assignment returns a rvalue, while compound assignment returns
   // lvalue.
@@ -5304,7 +5306,7 @@ SpirvEmitter::processAssignment(const Expr *lhs, SpirvInstruction *rhs,
 
 void SpirvEmitter::storeValue(SpirvInstruction *lhsPtr,
                               SpirvInstruction *rhsVal, QualType lhsValType,
-                              SourceLocation loc) {
+                              SourceLocation loc, SourceRange range) {
   // Defend against nullptr source or destination so errors can bubble up to the
   // user.
   if (!lhsPtr || !rhsVal)
@@ -5336,7 +5338,7 @@ void SpirvEmitter::storeValue(SpirvInstruction *lhsPtr,
       rhsVal = castToInt(rhsVal, fromType, toType, {});
     }
 
-    spvBuilder.createStore(lhsPtr, rhsVal, loc);
+    spvBuilder.createStore(lhsPtr, rhsVal, loc, range);
   } else if (isOpaqueType(lhsValType)) {
     // Resource types are represented using RecordType in the AST.
     // Handle them before the general RecordType.

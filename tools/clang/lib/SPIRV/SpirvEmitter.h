@@ -151,13 +151,15 @@ private:
   /// lhs again.
   SpirvInstruction *processAssignment(const Expr *lhs, SpirvInstruction *rhs,
                                       bool isCompoundAssignment,
-                                      SpirvInstruction *lhsPtr = nullptr);
+                                      SpirvInstruction *lhsPtr = nullptr,
+                                      SourceRange range = {});
 
   /// Generates SPIR-V instructions to store rhsVal into lhsPtr. This will be
   /// recursive if lhsValType is a composite type. rhsExpr will be used as a
   /// reference to adjust the CodeGen if not nullptr.
   void storeValue(SpirvInstruction *lhsPtr, SpirvInstruction *rhsVal,
-                  QualType lhsValType, SourceLocation loc);
+                  QualType lhsValType, SourceLocation loc,
+                  SourceRange range = {});
 
   /// Decomposes and reconstructs the given srcVal of the given valType to meet
   /// the requirements of the dstLR layout rule.
