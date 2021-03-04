@@ -898,7 +898,7 @@ SpirvInstruction *SpirvEmitter::doExpr(const Expr *expr,
   } else if (const auto *funcCall = dyn_cast<CallExpr>(expr)) {
     result = doCallExpr(funcCall);
   } else if (const auto *subscriptExpr = dyn_cast<ArraySubscriptExpr>(expr)) {
-    result = doArraySubscriptExpr(subscriptExpr);
+    result = doArraySubscriptExpr(subscriptExpr, range);
   } else if (const auto *condExpr = dyn_cast<ConditionalOperator>(expr)) {
     result = doConditionalOperator(condExpr);
   } else if (const auto *defaultArgExpr = dyn_cast<CXXDefaultArgExpr>(expr)) {
@@ -2179,15 +2179,18 @@ void SpirvEmitter::doSwitchStmt(const SwitchStmt *switchStmt,
 }
 
 SpirvInstruction *
-SpirvEmitter::doArraySubscriptExpr(const ArraySubscriptExpr *expr) {
+SpirvEmitter::doArraySubscriptExpr(const ArraySubscriptExpr *expr,
+                                   SourceRange rangeOverride) {
   llvm::SmallVector<SpirvInstruction *, 4> indices;
   const auto *base = collectArrayStructIndices(
       expr, /*rawIndex*/ false, /*rawIndices*/ nullptr, &indices);
   auto *info = loadIfAliasVarRef(base);
+  SourceRange range =
+      (rangeOverride != SourceRange()) ? rangeOverride : expr->getSourceRange();
 
   if (!indices.empty()) {
     info = turnIntoElementPtr(base->getType(), info, expr->getType(), indices,
-                              base->getExprLoc());
+                              base->getExprLoc(), range);
   }
 
   return info;
