@@ -773,16 +773,18 @@ SpirvInstruction *SpirvEmitter::doExpr(const Expr *expr,
                                        SourceRange rangeOverride) {
   SpirvInstruction *result = nullptr;
   expr = expr->IgnoreParens();
+  SourceRange range =
+      (rangeOverride != SourceRange()) ? rangeOverride : expr->getSourceRange();
 
   if (const auto *declRefExpr = dyn_cast<DeclRefExpr>(expr)) {
     result = declIdMapper.getDeclEvalInfo(declRefExpr->getDecl(),
                                           expr->getLocStart());
   } else if (const auto *memberExpr = dyn_cast<MemberExpr>(expr)) {
-    result = doMemberExpr(memberExpr, rangeOverride);
+    result = doMemberExpr(memberExpr, range);
   } else if (const auto *castExpr = dyn_cast<CastExpr>(expr)) {
-    result = doCastExpr(castExpr);
+    result = doCastExpr(castExpr, range);
   } else if (const auto *initListExpr = dyn_cast<InitListExpr>(expr)) {
-    result = doInitListExpr(initListExpr);
+    result = doInitListExpr(initListExpr, range);
   } else if (const auto *boolLiteral = dyn_cast<CXXBoolLiteralExpr>(expr)) {
     result =
         spvBuilder.getConstantBool(boolLiteral->getValue(), isSpecConstantMode);
@@ -834,9 +836,10 @@ SpirvInstruction *SpirvEmitter::doExpr(const Expr *expr,
 SpirvInstruction *SpirvEmitter::loadIfGLValue(const Expr *expr) {
   // We are trying to load the value here, which is what an LValueToRValue
   // implicit cast is intended to do. We can ignore the cast if exists.
+  SourceRange range = expr->getSourceRange();
   expr = expr->IgnoreParenLValueCasts();
 
-  return loadIfGLValue(expr, doExpr(expr));
+  return loadIfGLValue(expr, doExpr(expr, range));
 }
 
 SpirvInstruction *SpirvEmitter::loadIfGLValue(const Expr *expr,
@@ -2324,17 +2327,20 @@ SpirvInstruction *SpirvEmitter::processCall(const CallExpr *callExpr) {
   return retVal;
 }
 
-SpirvInstruction *SpirvEmitter::doCastExpr(const CastExpr *expr) {
+SpirvInstruction *SpirvEmitter::doCastExpr(const CastExpr *expr,
+                                           SourceRange rangeOverride) {
   const Expr *subExpr = expr->getSubExpr();
   const QualType subExprType = subExpr->getType();
   const QualType toType = expr->getType();
   const auto srcLoc = expr->getExprLoc();
+  SourceRange range =
+      (rangeOverride != SourceRange()) ? rangeOverride : expr->getSourceRange();
 
   switch (expr->getCastKind()) {
   case CastKind::CK_LValueToRValue:
     return loadIfGLValue(subExpr);
   case CastKind::CK_NoOp:
-    return doExpr(subExpr);
+    return doExpr(subExpr, range);
   case CastKind::CK_IntegralCast:
   case CastKind::CK_FloatingToIntegral:
   case CastKind::CK_HLSLCC_IntegralCast:
@@ -4994,13 +5000,16 @@ SpirvEmitter::doHLSLVectorElementExpr(const HLSLVectorElementExpr *expr) {
                                         expr->getLocStart());
 }
 
-SpirvInstruction *SpirvEmitter::doInitListExpr(const InitListExpr *expr) {
+SpirvInstruction *SpirvEmitter::doInitListExpr(const InitListExpr *expr,
+                                               SourceRange rangeOverride) {
   if (auto *id = tryToEvaluateAsConst(expr)) {
     id->setRValue();
     return id;
   }
 
-  auto *result = InitListHandler(astContext, *this).processInit(expr);
+  SourceRange range =
+      (rangeOverride != SourceRange()) ? rangeOverride : expr->getSourceRange();
+  auto *result = InitListHandler(astContext, *this).processInit(expr, range);
   result->setRValue();
   return result;
 }

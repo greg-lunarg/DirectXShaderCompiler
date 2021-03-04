@@ -27,7 +27,8 @@ InitListHandler::InitListHandler(const ASTContext &ctx, SpirvEmitter &emitter)
       spvBuilder(emitter.getSpirvBuilder()),
       diags(emitter.getDiagnosticsEngine()) {}
 
-SpirvInstruction *InitListHandler::processInit(const InitListExpr *expr) {
+SpirvInstruction *InitListHandler::processInit(const InitListExpr *expr,
+                                               SourceRange rangeOverride) {
   initializers.clear();
   scalars.clear();
 
@@ -36,7 +37,9 @@ SpirvInstruction *InitListHandler::processInit(const InitListExpr *expr) {
   // tail of the vector. This is more efficient than using a deque.
   std::reverse(std::begin(initializers), std::end(initializers));
 
-  return doProcess(expr->getType(), expr->getExprLoc());
+  SourceRange range =
+      (rangeOverride != SourceRange()) ? rangeOverride : expr->getSourceRange();
+  return doProcess(expr->getType(), expr->getExprLoc(), range);
 }
 
 SpirvInstruction *InitListHandler::processCast(QualType toType,
@@ -50,8 +53,9 @@ SpirvInstruction *InitListHandler::processCast(QualType toType,
 }
 
 SpirvInstruction *InitListHandler::doProcess(QualType type,
-                                             SourceLocation srcLoc) {
-  auto *init = createInitForType(type, srcLoc);
+                                             SourceLocation srcLoc,
+                                             SourceRange range) {
+  auto *init = createInitForType(type, srcLoc, range);
 
   if (init) {
     // For successful translation, we should have consumed all initializers and
@@ -193,7 +197,8 @@ bool InitListHandler::tryToSplitConstantArray() {
 }
 
 SpirvInstruction *InitListHandler::createInitForType(QualType type,
-                                                     SourceLocation srcLoc) {
+                                                     SourceLocation srcLoc,
+                                                     SourceRange range) {
   type = type.getCanonicalType();
 
   if (type->isBuiltinType())
@@ -202,12 +207,12 @@ SpirvInstruction *InitListHandler::createInitForType(QualType type,
   QualType elemType = {};
   uint32_t elemCount = 0;
   if (isVectorType(type, &elemType, &elemCount))
-    return createInitForVectorType(elemType, elemCount, srcLoc);
+    return createInitForVectorType(elemType, elemCount, srcLoc, range);
 
   // The purpose of this check is for vectors of size 1 (for which isVectorType
   // is false).
   if (isScalarType(type, &elemType))
-    return createInitForVectorType(elemType, 1, srcLoc);
+    return createInitForVectorType(elemType, 1, srcLoc, range);
 
   if (hlsl::IsHLSLMatType(type)) {
     return createInitForMatrixType(type, srcLoc);
@@ -261,7 +266,8 @@ InitListHandler::createInitForBuiltinType(QualType type,
 
 SpirvInstruction *
 InitListHandler::createInitForVectorType(QualType elemType, uint32_t count,
-                                         SourceLocation srcLoc) {
+                                         SourceLocation srcLoc,
+                                         SourceRange range) {
   // If we don't have leftover scalars, we can try to see if there is a vector
   // of the same size in the original initializer list so that we can use it
   // directly. For all other cases, we need to construct a new vector as the
@@ -300,7 +306,7 @@ InitListHandler::createInitForVectorType(QualType elemType, uint32_t count,
   const QualType vecType = astContext.getExtVectorType(elemType, count);
 
   // TODO: use OpConstantComposite when all components are constants
-  return spvBuilder.createCompositeConstruct(vecType, elements, srcLoc);
+  return spvBuilder.createCompositeConstruct(vecType, elements, srcLoc, range);
 }
 
 SpirvInstruction *

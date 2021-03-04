@@ -101,14 +101,16 @@ private:
   SpirvInstruction *doArraySubscriptExpr(const ArraySubscriptExpr *expr);
   SpirvInstruction *doBinaryOperator(const BinaryOperator *expr);
   SpirvInstruction *doCallExpr(const CallExpr *callExpr);
-  SpirvInstruction *doCastExpr(const CastExpr *expr);
+  SpirvInstruction *doCastExpr(const CastExpr *expr,
+                               SourceRange rangeOverride = {});
   SpirvInstruction *doCompoundAssignOperator(const CompoundAssignOperator *);
   SpirvInstruction *doConditionalOperator(const ConditionalOperator *expr);
   SpirvInstruction *doCXXMemberCallExpr(const CXXMemberCallExpr *expr);
   SpirvInstruction *doCXXOperatorCallExpr(const CXXOperatorCallExpr *expr);
   SpirvInstruction *doExtMatrixElementExpr(const ExtMatrixElementExpr *expr);
   SpirvInstruction *doHLSLVectorElementExpr(const HLSLVectorElementExpr *expr);
-  SpirvInstruction *doInitListExpr(const InitListExpr *expr);
+  SpirvInstruction *doInitListExpr(const InitListExpr *expr,
+                                   SourceRange rangeOverride = {});
   SpirvInstruction *doMemberExpr(const MemberExpr *expr,
                                  SourceRange rangeOverride = {});
   SpirvInstruction *doUnaryOperator(const UnaryOperator *expr);
