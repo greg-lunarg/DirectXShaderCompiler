@@ -1213,7 +1213,8 @@ public:
 class SpirvCompositeConstruct : public SpirvInstruction {
 public:
   SpirvCompositeConstruct(QualType resultType, SourceLocation loc,
-                          llvm::ArrayRef<SpirvInstruction *> constituentsVec);
+                          llvm::ArrayRef<SpirvInstruction *> constituentsVec,
+                          SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvCompositeConstruct)
 

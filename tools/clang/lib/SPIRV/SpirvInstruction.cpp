@@ -457,9 +457,10 @@ SpirvBitFieldInsert::SpirvBitFieldInsert(QualType resultType,
 
 SpirvCompositeConstruct::SpirvCompositeConstruct(
     QualType resultType, SourceLocation loc,
-    llvm::ArrayRef<SpirvInstruction *> constituentsVec)
+    llvm::ArrayRef<SpirvInstruction *> constituentsVec,
+    SourceRange range)
     : SpirvInstruction(IK_CompositeConstruct, spv::Op::OpCompositeConstruct,
-                       resultType, loc),
+                       resultType, loc, range),
       consituents(constituentsVec.begin(), constituentsVec.end()) {}
 
 SpirvConstant::SpirvConstant(Kind kind, spv::Op op, const SpirvType *spvType)

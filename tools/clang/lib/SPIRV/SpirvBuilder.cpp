@@ -143,10 +143,11 @@ void SpirvBuilder::setContinueTarget(SpirvBasicBlock *continueLabel) {
 
 SpirvCompositeConstruct *SpirvBuilder::createCompositeConstruct(
     QualType resultType, llvm::ArrayRef<SpirvInstruction *> constituents,
-    SourceLocation loc) {
+    SourceLocation loc, SourceRange range) {
   assert(insertPoint && "null insert point");
   auto *instruction =
-      new (context) SpirvCompositeConstruct(resultType, loc, constituents);
+      new (context) SpirvCompositeConstruct(resultType, loc, constituents,
+                                            range);
   insertPoint->addInstruction(instruction);
   if (!constituents.empty()) {
     instruction->setLayoutRule(constituents[0]->getLayoutRule());
