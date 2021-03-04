@@ -98,7 +98,8 @@ private:
   void doDoStmt(const DoStmt *, llvm::ArrayRef<const Attr *> attrs = {});
   void doContinueStmt(const ContinueStmt *);
 
-  SpirvInstruction *doArraySubscriptExpr(const ArraySubscriptExpr *expr);
+  SpirvInstruction *doArraySubscriptExpr(const ArraySubscriptExpr *expr,
+                                         SourceRange rangeOverride = {});
   SpirvInstruction *doBinaryOperator(const BinaryOperator *expr);
   SpirvInstruction *doCallExpr(const CallExpr *callExpr);
   SpirvInstruction *doCastExpr(const CastExpr *expr,
