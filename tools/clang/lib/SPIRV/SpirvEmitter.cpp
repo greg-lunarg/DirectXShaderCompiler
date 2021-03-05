@@ -918,10 +918,12 @@ SpirvInstruction *SpirvEmitter::doExpr(const Expr *expr,
   return result;
 }
 
-SpirvInstruction *SpirvEmitter::loadIfGLValue(const Expr *expr) {
+SpirvInstruction *SpirvEmitter::loadIfGLValue(const Expr *expr,
+                                              SourceRange rangeOverride) {
   // We are trying to load the value here, which is what an LValueToRValue
   // implicit cast is intended to do. We can ignore the cast if exists.
-  SourceRange range = expr->getSourceRange();
+  SourceRange range =
+      (rangeOverride != SourceRange()) ? rangeOverride : expr->getSourceRange();
   expr = expr->IgnoreParenLValueCasts();
 
   return loadIfGLValue(expr, doExpr(expr, range));
@@ -5081,7 +5083,10 @@ SpirvEmitter::doExtMatrixElementExpr(const ExtMatrixElementExpr *expr) {
 }
 
 SpirvInstruction *
-SpirvEmitter::doHLSLVectorElementExpr(const HLSLVectorElementExpr *expr) {
+SpirvEmitter::doHLSLVectorElementExpr(const HLSLVectorElementExpr *expr,
+                                      SourceRange rangeOverride) {
+  SourceRange range =
+      (rangeOverride != SourceRange()) ? rangeOverride : expr->getSourceRange();
   const Expr *baseExpr = nullptr;
   hlsl::VectorMemberAccessPositions accessor;
   condenseVectorElementExpr(expr, &baseExpr, &accessor);
@@ -5101,7 +5106,7 @@ SpirvEmitter::doHLSLVectorElementExpr(const HLSLVectorElementExpr *expr) {
   // times, we need composite construct instructions.
 
   if (accessorSize == 1) {
-    auto *baseInfo = doExpr(baseExpr, expr->getSourceRange());
+    auto *baseInfo = doExpr(baseExpr, range);
 
     if (!baseInfo || baseSize == 1) {
       // Selecting one element from a size-1 vector. The underlying vector is
@@ -5122,19 +5127,19 @@ SpirvEmitter::doHLSLVectorElementExpr(const HLSLVectorElementExpr *expr) {
       // We need a lvalue here. Do not try to load.
       return spvBuilder.createAccessChain(type, baseInfo, {index},
                                           baseExpr->getLocStart(),
-                                          expr->getSourceRange());
+                                          range);
     } else { // E.g., (v + w).x;
       // The original base vector may not be a rvalue. Need to load it if
       // it is lvalue since ImplicitCastExpr (LValueToRValue) will be missing
       // for that case.
       SpirvInstruction *result = spvBuilder.createCompositeExtract(
-          type, baseInfo, {accessor.Swz0}, baseExpr->getLocStart());
+          type, baseInfo, {accessor.Swz0}, baseExpr->getLocStart(), range);
       // Special-case: Booleans in SPIR-V do not have a physical layout. Uint is
       // used to represent them when layout is required.
       if (expr->getType()->isBooleanType() &&
           baseInfo->getLayoutRule() != SpirvLayoutRule::Void)
         result = castToBool(result, astContext.UnsignedIntTy, astContext.BoolTy,
-                            expr->getLocStart());
+                            expr->getLocStart(), range);
       return result;
     }
   }
@@ -5142,11 +5147,11 @@ SpirvEmitter::doHLSLVectorElementExpr(const HLSLVectorElementExpr *expr) {
   if (baseSize == 1) {
     // Selecting more than one element from a size-1 vector, for example,
     // <scalar>.xx. Construct the vector.
-    auto *info = loadIfGLValue(baseExpr);
+    auto *info = loadIfGLValue(baseExpr, range);
     const auto type = expr->getType();
     llvm::SmallVector<SpirvInstruction *, 4> components(accessorSize, info);
     info = spvBuilder.createCompositeConstruct(type, components,
-                                               expr->getLocStart());
+                                               expr->getLocStart(), range);
     info->setRValue();
     return info;
   }
@@ -5163,13 +5168,13 @@ SpirvEmitter::doHLSLVectorElementExpr(const HLSLVectorElementExpr *expr) {
   }
 
   if (originalOrder)
-    return doExpr(baseExpr);
+    return doExpr(baseExpr, range);
 
-  auto *info = loadIfGLValue(baseExpr);
+  auto *info = loadIfGLValue(baseExpr, range);
   // Use base for both vectors. But we are only selecting values from the
   // first one.
   return spvBuilder.createVectorShuffle(expr->getType(), info, info, selectors,
-                                        expr->getLocStart());
+                                        expr->getLocStart(), range);
 }
 
 SpirvInstruction *SpirvEmitter::doInitListExpr(const InitListExpr *expr,
@@ -7055,7 +7060,8 @@ SpirvInstruction *SpirvEmitter::turnIntoElementPtr(
 SpirvInstruction *SpirvEmitter::castToBool(SpirvInstruction *fromVal,
                                            QualType fromType,
                                            QualType toBoolType,
-                                           SourceLocation loc) {
+                                           SourceLocation loc,
+                                           SourceRange range) {
   if (isSameType(astContext, fromType, toBoolType))
     return fromVal;
 
@@ -7070,11 +7076,11 @@ SpirvInstruction *SpirvEmitter::castToBool(SpirvInstruction *fromVal,
       llvm::SmallVector<SpirvInstruction *, 4> rows;
       for (uint32_t i = 0; i < rowCount; ++i) {
         auto *row = spvBuilder.createCompositeExtract(fromRowQualType, fromVal,
-                                                      {i}, loc);
+                                                      {i}, loc, range);
         rows.push_back(
-            castToBool(row, fromRowQualType, toBoolRowQualType, loc));
+            castToBool(row, fromRowQualType, toBoolRowQualType, loc, range));
       }
-      return spvBuilder.createCompositeConstruct(toBoolType, rows, loc);
+      return spvBuilder.createCompositeConstruct(toBoolType, rows, loc, range);
     }
   }
 

@@ -71,7 +71,8 @@ public:
   /// not be wrapped in ImplicitCastExpr (LValueToRValue) when appearing in
   /// HLSLVectorElementExpr since the generated HLSLVectorElementExpr itself can
   /// be lvalue or rvalue.
-  SpirvInstruction *loadIfGLValue(const Expr *expr);
+  SpirvInstruction *loadIfGLValue(const Expr *expr,
+                                  SourceRange rangeOverride = {});
 
   /// Casts the given value from fromType to toType. fromType and toType should
   /// both be scalar or vector types of the same size.
@@ -109,7 +110,8 @@ private:
   SpirvInstruction *doCXXMemberCallExpr(const CXXMemberCallExpr *expr);
   SpirvInstruction *doCXXOperatorCallExpr(const CXXOperatorCallExpr *expr);
   SpirvInstruction *doExtMatrixElementExpr(const ExtMatrixElementExpr *expr);
-  SpirvInstruction *doHLSLVectorElementExpr(const HLSLVectorElementExpr *expr);
+  SpirvInstruction *doHLSLVectorElementExpr(const HLSLVectorElementExpr *expr,
+                                            SourceRange rangeOverride = {});
   SpirvInstruction *doInitListExpr(const InitListExpr *expr,
                                    SourceRange rangeOverride = {});
   SpirvInstruction *doMemberExpr(const MemberExpr *expr,
@@ -358,7 +360,8 @@ private:
   /// Processes the given expr, casts the result into the given bool (vector)
   /// type and returns the <result-id> of the casted value.
   SpirvInstruction *castToBool(SpirvInstruction *value, QualType fromType,
-                               QualType toType, SourceLocation loc);
+                               QualType toType, SourceLocation loc,
+                               SourceRange range = {});
 
   /// Processes the given expr, casts the result into the given integer (vector)
   /// type and returns the <result-id> of the casted value.
