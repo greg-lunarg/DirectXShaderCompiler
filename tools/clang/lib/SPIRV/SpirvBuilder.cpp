@@ -156,10 +156,12 @@ SpirvCompositeConstruct *SpirvBuilder::createCompositeConstruct(
 
 SpirvCompositeExtract *SpirvBuilder::createCompositeExtract(
     QualType resultType, SpirvInstruction *composite,
-    llvm::ArrayRef<uint32_t> indexes, SourceLocation loc) {
+    llvm::ArrayRef<uint32_t> indexes, SourceLocation loc,
+    SourceRange range) {
   assert(insertPoint && "null insert point");
   auto *instruction =
-      new (context) SpirvCompositeExtract(resultType, loc, composite, indexes);
+      new (context) SpirvCompositeExtract(resultType, loc, composite, indexes,
+                                          range);
   instruction->setRValue();
   insertPoint->addInstruction(instruction);
   return instruction;
@@ -178,10 +180,11 @@ SpirvCompositeInsert *SpirvBuilder::createCompositeInsert(
 
 SpirvVectorShuffle *SpirvBuilder::createVectorShuffle(
     QualType resultType, SpirvInstruction *vector1, SpirvInstruction *vector2,
-    llvm::ArrayRef<uint32_t> selectors, SourceLocation loc) {
+    llvm::ArrayRef<uint32_t> selectors, SourceLocation loc,
+    SourceRange range) {
   assert(insertPoint && "null insert point");
   auto *instruction = new (context)
-      SpirvVectorShuffle(resultType, loc, vector1, vector2, selectors);
+      SpirvVectorShuffle(resultType, loc, vector1, vector2, selectors, range);
   instruction->setRValue();
   insertPoint->addInstruction(instruction);
   return instruction;

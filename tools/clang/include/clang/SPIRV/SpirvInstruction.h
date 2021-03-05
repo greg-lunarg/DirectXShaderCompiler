@@ -1234,7 +1234,8 @@ class SpirvCompositeExtract : public SpirvInstruction {
 public:
   SpirvCompositeExtract(QualType resultType, SourceLocation loc,
                         SpirvInstruction *composite,
-                        llvm::ArrayRef<uint32_t> indices);
+                        llvm::ArrayRef<uint32_t> indices,
+                        SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvCompositeExtract)
 
@@ -1875,7 +1876,8 @@ class SpirvVectorShuffle : public SpirvInstruction {
 public:
   SpirvVectorShuffle(QualType resultType, SourceLocation loc,
                      SpirvInstruction *vec1, SpirvInstruction *vec2,
-                     llvm::ArrayRef<uint32_t> componentsVec);
+                     llvm::ArrayRef<uint32_t> componentsVec,
+                     SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvVectorShuffle)
 

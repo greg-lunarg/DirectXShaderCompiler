@@ -149,7 +149,8 @@ public:
   /// Returns the instruction pointer for the extracted element.
   SpirvCompositeExtract *
   createCompositeExtract(QualType resultType, SpirvInstruction *composite,
-                         llvm::ArrayRef<uint32_t> indexes, SourceLocation loc);
+                         llvm::ArrayRef<uint32_t> indexes, SourceLocation loc,
+                         SourceRange range = {});
 
   /// \brief Creates a composite insert instruction. The given object will
   /// replace the component in the composite at the given indices. Returns the
@@ -167,7 +168,8 @@ public:
                                           SpirvInstruction *vector1,
                                           SpirvInstruction *vector2,
                                           llvm::ArrayRef<uint32_t> selectors,
-                                          SourceLocation loc);
+                                          SourceLocation loc,
+                                          SourceRange range = {});
 
   /// \brief Creates a load instruction loading the value of the given
   /// <result-type> from the given pointer. Returns the instruction pointer for

@@ -541,9 +541,10 @@ bool SpirvConstantNull::operator==(const SpirvConstantNull &that) const {
 SpirvCompositeExtract::SpirvCompositeExtract(QualType resultType,
                                              SourceLocation loc,
                                              SpirvInstruction *compositeInst,
-                                             llvm::ArrayRef<uint32_t> indexVec)
+                                             llvm::ArrayRef<uint32_t> indexVec,
+                                             SourceRange range)
     : SpirvInstruction(IK_CompositeExtract, spv::Op::OpCompositeExtract,
-                       resultType, loc),
+                       resultType, loc, range),
       composite(compositeInst), indices(indexVec.begin(), indexVec.end()) {}
 
 SpirvCompositeInsert::SpirvCompositeInsert(QualType resultType,
@@ -798,9 +799,10 @@ bool SpirvUnaryOp::isConversionOp() const {
 SpirvVectorShuffle::SpirvVectorShuffle(QualType resultType, SourceLocation loc,
                                        SpirvInstruction *vec1Inst,
                                        SpirvInstruction *vec2Inst,
-                                       llvm::ArrayRef<uint32_t> componentsVec)
+                                       llvm::ArrayRef<uint32_t> componentsVec,
+                                       SourceRange range)
     : SpirvInstruction(IK_VectorShuffle, spv::Op::OpVectorShuffle, resultType,
-                       loc),
+                       loc, range),
       vec1(vec1Inst), vec2(vec2Inst),
       components(componentsVec.begin(), componentsVec.end()) {}
 
