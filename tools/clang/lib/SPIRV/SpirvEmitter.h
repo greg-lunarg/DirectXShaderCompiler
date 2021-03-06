@@ -275,7 +275,8 @@ private:
   /// Tries to emit instructions for assigning to the given RWBuffer/RWTexture
   /// object. Returns 0 if the trial fails and no instructions are generated.
   SpirvInstruction *tryToAssignToRWBufferRWTexture(const Expr *lhs,
-                                                   SpirvInstruction *rhs);
+                                                   SpirvInstruction *rhs,
+                                                   SourceRange range = {});
 
   /// Tries to emit instructions for assigning to the given mesh out attribute
   /// or indices object. Returns 0 if the trial fails and no instructions are
@@ -304,7 +305,8 @@ private:
       llvm::function_ref<SpirvInstruction *(uint32_t, QualType,
                                             SpirvInstruction *)>
           actOnEachVector,
-      SourceLocation loc = {});
+      SourceLocation loc = {},
+	  SourceRange range = {});
 
   /// Translates the given varDecl into a spec constant.
   void createSpecConstant(const VarDecl *varDecl);

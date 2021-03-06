@@ -787,8 +787,10 @@ SpirvStore::SpirvStore(SourceLocation loc, SpirvInstruction *pointerInst,
       pointer(pointerInst), object(objectInst), memoryAccess(mask) {}
 
 SpirvUnaryOp::SpirvUnaryOp(spv::Op opcode, QualType resultType,
-                           SourceLocation loc, SpirvInstruction *op)
-    : SpirvInstruction(IK_UnaryOp, opcode, resultType, loc), operand(op) {}
+                           SourceLocation loc, SpirvInstruction *op,
+                           SourceRange range)
+    : SpirvInstruction(IK_UnaryOp, opcode, resultType, loc, range),
+      operand(op) {}
 
 bool SpirvUnaryOp::isConversionOp() const {
   return opcode == spv::Op::OpConvertFToU || opcode == spv::Op::OpConvertFToS ||

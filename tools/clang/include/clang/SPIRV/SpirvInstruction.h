@@ -1857,7 +1857,7 @@ private:
 class SpirvUnaryOp : public SpirvInstruction {
 public:
   SpirvUnaryOp(spv::Op opcode, QualType resultType, SourceLocation loc,
-               SpirvInstruction *op);
+               SpirvInstruction *op, SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvUnaryOp)
 
