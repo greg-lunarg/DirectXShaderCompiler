@@ -209,7 +209,8 @@ public:
   /// \brief Creates a unary operation with the given SPIR-V opcode. Returns
   /// the instruction pointer for the result.
   SpirvUnaryOp *createUnaryOp(spv::Op op, QualType resultType,
-                              SpirvInstruction *operand, SourceLocation loc);
+                              SpirvInstruction *operand, SourceLocation loc,
+                              SourceRange range = {});
 
   /// \brief Creates a binary operation with the given SPIR-V opcode. Returns
   /// the instruction pointer for the result.
@@ -315,7 +316,7 @@ public:
   /// \brief Creates SPIR-V instructions for writing to the given image.
   void createImageWrite(QualType imageType, SpirvInstruction *image,
                         SpirvInstruction *coord, SpirvInstruction *texel,
-                        SourceLocation loc);
+                        SourceLocation loc, SourceRange range = {});
 
   /// \brief Creates SPIR-V instructions for gathering the given image.
   ///

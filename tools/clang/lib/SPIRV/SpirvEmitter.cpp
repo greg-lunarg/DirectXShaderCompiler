@@ -5057,6 +5057,7 @@ SpirvInstruction *SpirvEmitter::doUnaryOperator(const UnaryOperator *expr) {
   const auto *subExpr = expr->getSubExpr();
   const auto subType = subExpr->getType();
   auto *subValue = doExpr(subExpr);
+  SourceRange range = expr->getSourceRange();
 
   switch (opcode) {
   case UO_PreInc:
@@ -5070,35 +5071,36 @@ SpirvInstruction *SpirvEmitter::doUnaryOperator(const UnaryOperator *expr) {
     SpirvInstruction *originValue =
         subValue->isRValue()
             ? subValue
-            : spvBuilder.createLoad(subType, subValue, subExpr->getLocStart());
+            : spvBuilder.createLoad(subType, subValue, subExpr->getLocStart(),
+                                    range);
     auto *one = hlsl::IsHLSLMatType(subType) ? getMatElemValueOne(subType)
                                              : getValueOne(subType);
 
     SpirvInstruction *incValue = nullptr;
     if (isMxNMatrix(subType)) {
       // For matrices, we can only increment/decrement each vector of it.
-      const auto actOnEachVec = [this, spvOp, one,
-                                 expr](uint32_t /*index*/, QualType vecType,
+      const auto actOnEachVec = [this, spvOp, one, expr,
+                                 range](uint32_t /*index*/, QualType vecType,
                                        SpirvInstruction *lhsVec) {
         auto *val = spvBuilder.createBinaryOp(spvOp, vecType, lhsVec, one,
-                                              expr->getOperatorLoc());
+                                              expr->getOperatorLoc(), range);
         val->setRValue();
         return val;
       };
       incValue = processEachVectorInMatrix(subExpr, originValue, actOnEachVec,
-                                           expr->getLocStart());
+                                           expr->getLocStart(), range);
     } else {
       incValue = spvBuilder.createBinaryOp(spvOp, subType, originValue, one,
-                                           expr->getOperatorLoc());
+                                           expr->getOperatorLoc(), range);
     }
 
     // If this is a RWBuffer/RWTexture assignment, OpImageWrite will be used.
     // Otherwise, store using OpStore.
-    if (tryToAssignToRWBufferRWTexture(subExpr, incValue)) {
+    if (tryToAssignToRWBufferRWTexture(subExpr, incValue, range)) {
       incValue->setRValue();
       subValue = incValue;
     } else {
-      spvBuilder.createStore(subValue, incValue, subExpr->getLocStart());
+      spvBuilder.createStore(subValue, incValue, subExpr->getLocStart(), range);
     }
 
     // Prefix increment/decrement operator returns a lvalue, while postfix
@@ -5112,15 +5114,15 @@ SpirvInstruction *SpirvEmitter::doUnaryOperator(const UnaryOperator *expr) {
   }
   case UO_Not: {
     subValue = spvBuilder.createUnaryOp(spv::Op::OpNot, subType, subValue,
-                                        expr->getOperatorLoc());
+                                        expr->getOperatorLoc(), range);
     subValue->setRValue();
     return subValue;
   }
   case UO_LNot: {
     // Parsing will do the necessary casting to make sure we are applying the
     // ! operator on boolean values.
-    subValue = spvBuilder.createUnaryOp(spv::Op::OpLogicalNot, subType,
-                                        subValue, expr->getOperatorLoc());
+    subValue = spvBuilder.createUnaryOp(spv::Op::OpLogicalNot, subType, subValue,
+                                        expr->getOperatorLoc(), range);
     subValue->setRValue();
     return subValue;
   }
@@ -5135,17 +5137,17 @@ SpirvInstruction *SpirvEmitter::doUnaryOperator(const UnaryOperator *expr) {
 
     if (isMxNMatrix(subType)) {
       // For matrices, we can only negate each vector of it.
-      const auto actOnEachVec = [this, spvOp, expr](uint32_t /*index*/,
-                                                    QualType vecType,
-                                                    SpirvInstruction *lhsVec) {
+      const auto actOnEachVec = [this, spvOp, expr,
+                                 range](uint32_t /*index*/, QualType vecType,
+                                        SpirvInstruction *lhsVec) {
         return spvBuilder.createUnaryOp(spvOp, vecType, lhsVec,
-                                        expr->getOperatorLoc());
+                                        expr->getOperatorLoc(), range);
       };
       return processEachVectorInMatrix(subExpr, subValue, actOnEachVec,
-                                       expr->getLocStart());
+                                       expr->getLocStart(), range);
     } else {
       subValue = spvBuilder.createUnaryOp(spvOp, subType, subValue,
-                                          expr->getOperatorLoc());
+                                          expr->getOperatorLoc(), range);
       subValue->setRValue();
       return subValue;
     }
@@ -6246,17 +6248,18 @@ SpirvEmitter::tryToAssignToVectorElements(const Expr *lhs,
 
 SpirvInstruction *
 SpirvEmitter::tryToAssignToRWBufferRWTexture(const Expr *lhs,
-                                             SpirvInstruction *rhs) {
+                                             SpirvInstruction *rhs,
+                                             SourceRange range) {
   const Expr *baseExpr = nullptr;
   const Expr *indexExpr = nullptr;
   const auto lhsExpr = dyn_cast<CXXOperatorCallExpr>(lhs);
   if (isBufferTextureIndexing(lhsExpr, &baseExpr, &indexExpr)) {
-    auto *loc = doExpr(indexExpr);
+    auto *loc = doExpr(indexExpr, range);
     const QualType imageType = baseExpr->getType();
-    auto *baseInfo = doExpr(baseExpr);
+    auto *baseInfo = doExpr(baseExpr, range);
     auto *image =
-        spvBuilder.createLoad(imageType, baseInfo, baseExpr->getExprLoc());
-    spvBuilder.createImageWrite(imageType, image, loc, rhs, lhs->getExprLoc());
+        spvBuilder.createLoad(imageType, baseInfo, baseExpr->getExprLoc(), range);
+    spvBuilder.createImageWrite(imageType, image, loc, rhs, lhs->getExprLoc(), range);
     return rhs;
   }
   return nullptr;
@@ -6520,7 +6523,7 @@ SpirvInstruction *SpirvEmitter::processEachVectorInMatrix(
     llvm::function_ref<SpirvInstruction *(uint32_t, QualType,
                                           SpirvInstruction *)>
         actOnEachVector,
-    SourceLocation loc) {
+    SourceLocation loc, SourceRange range) {
   const auto matType = matrix->getType();
   assert(isMxNMatrix(matType));
   const QualType vecType = getComponentVectorType(astContext, matType);
@@ -6537,7 +6540,7 @@ SpirvInstruction *SpirvEmitter::processEachVectorInMatrix(
   }
 
   // Construct the result matrix
-  auto *val = spvBuilder.createCompositeConstruct(matType, vectors, loc);
+  auto *val = spvBuilder.createCompositeConstruct(matType, vectors, loc, range);
   val->setRValue();
   return val;
 }

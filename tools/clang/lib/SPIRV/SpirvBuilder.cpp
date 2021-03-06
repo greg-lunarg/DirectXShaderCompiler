@@ -308,9 +308,11 @@ SpirvBuilder::createAccessChain(QualType resultType, SpirvInstruction *base,
 
 SpirvUnaryOp *SpirvBuilder::createUnaryOp(spv::Op op, QualType resultType,
                                           SpirvInstruction *operand,
-                                          SourceLocation loc) {
+                                          SourceLocation loc,
+                                          SourceRange range) {
   assert(insertPoint && "null insert point");
-  auto *instruction = new (context) SpirvUnaryOp(op, resultType, loc, operand);
+  auto *instruction =
+      new (context) SpirvUnaryOp(op, resultType, loc, operand, range);
   insertPoint->addInstruction(instruction);
   return instruction;
 }
@@ -554,7 +556,7 @@ SpirvInstruction *SpirvBuilder::createImageFetchOrRead(
 void SpirvBuilder::createImageWrite(QualType imageType, SpirvInstruction *image,
                                     SpirvInstruction *coord,
                                     SpirvInstruction *texel,
-                                    SourceLocation loc) {
+                                    SourceLocation loc, SourceRange range) {
   assert(insertPoint && "null insert point");
   auto *writeInst = new (context) SpirvImageOp(
       spv::Op::OpImageWrite, imageType, loc, image, coord,
@@ -562,7 +564,7 @@ void SpirvBuilder::createImageWrite(QualType imageType, SpirvInstruction *image,
       /*dref*/ nullptr, /*bias*/ nullptr, /*lod*/ nullptr, /*gradDx*/ nullptr,
       /*gradDy*/ nullptr, /*constOffset*/ nullptr, /*varOffset*/ nullptr,
       /*constOffsets*/ nullptr, /*sample*/ nullptr, /*minLod*/ nullptr,
-      /*component*/ nullptr, texel);
+      /*component*/ nullptr, texel, range);
   insertPoint->addInstruction(writeInst);
 }
 
