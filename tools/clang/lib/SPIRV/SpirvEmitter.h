@@ -520,7 +520,8 @@ private:
   SpirvInstruction *processIntrinsicUsingGLSLInst(const CallExpr *,
                                                   GLSLstd450 instr,
                                                   bool canOperateOnMatrix,
-                                                  SourceLocation);
+                                                  SourceLocation,
+                                                  SourceRange range = {});
 
   /// Processes the given intrinsic function call using the given SPIR-V
   /// instruction. If the given instruction cannot operate on matrices, it

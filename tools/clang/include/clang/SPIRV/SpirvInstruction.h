@@ -1318,7 +1318,8 @@ public:
 class SpirvExtInst : public SpirvInstruction {
 public:
   SpirvExtInst(QualType resultType, SourceLocation loc, SpirvExtInstImport *set,
-               uint32_t inst, llvm::ArrayRef<SpirvInstruction *> operandsVec);
+               uint32_t inst, llvm::ArrayRef<SpirvInstruction *> operandsVec,
+               SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvExtInst)
 
@@ -1591,7 +1592,8 @@ private:
 class SpirvImageSparseTexelsResident : public SpirvInstruction {
 public:
   SpirvImageSparseTexelsResident(QualType resultType, SourceLocation loc,
-                                 SpirvInstruction *resCode);
+                                 SpirvInstruction *resCode,
+                                 SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvImageSparseTexelsResident)
 

@@ -568,8 +568,9 @@ SpirvEndPrimitive::SpirvEndPrimitive(SourceLocation loc)
 
 SpirvExtInst::SpirvExtInst(QualType resultType, SourceLocation loc,
                            SpirvExtInstImport *set, uint32_t inst,
-                           llvm::ArrayRef<SpirvInstruction *> operandsVec)
-    : SpirvInstruction(IK_ExtInst, spv::Op::OpExtInst, resultType, loc),
+                           llvm::ArrayRef<SpirvInstruction *> operandsVec,
+                           SourceRange range)
+    : SpirvInstruction(IK_ExtInst, spv::Op::OpExtInst, resultType, loc, range),
       instructionSet(set), instruction(inst),
       operands(operandsVec.begin(), operandsVec.end()) {}
 
@@ -723,9 +724,11 @@ SpirvImageQuery::SpirvImageQuery(spv::Op op, QualType resultType,
 }
 
 SpirvImageSparseTexelsResident::SpirvImageSparseTexelsResident(
-    QualType resultType, SourceLocation loc, SpirvInstruction *resCode)
+    QualType resultType, SourceLocation loc, SpirvInstruction *resCode,
+    SourceRange range)
     : SpirvInstruction(IK_ImageSparseTexelsResident,
-                       spv::Op::OpImageSparseTexelsResident, resultType, loc),
+                       spv::Op::OpImageSparseTexelsResident, resultType, loc,
+                       range),
       residentCode(resCode) {}
 
 SpirvImageTexelPointer::SpirvImageTexelPointer(QualType resultType,
