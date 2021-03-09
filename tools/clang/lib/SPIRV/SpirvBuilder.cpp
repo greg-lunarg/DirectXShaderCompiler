@@ -615,12 +615,12 @@ SpirvInstruction *SpirvBuilder::createImageGather(
   return imageInstruction;
 }
 
-SpirvImageSparseTexelsResident *
-SpirvBuilder::createImageSparseTexelsResident(SpirvInstruction *residentCode,
-                                              SourceLocation loc) {
+SpirvImageSparseTexelsResident *SpirvBuilder::createImageSparseTexelsResident(
+    SpirvInstruction *residentCode, SourceLocation loc, SourceRange range) {
   assert(insertPoint && "null insert point");
   auto *inst = new (context)
-      SpirvImageSparseTexelsResident(astContext.BoolTy, loc, residentCode);
+      SpirvImageSparseTexelsResident(astContext.BoolTy, loc, residentCode,
+		                             range);
   insertPoint->addInstruction(inst);
   return inst;
 }
@@ -736,10 +736,10 @@ void SpirvBuilder::createReturnValue(SpirvInstruction *value,
 SpirvInstruction *
 SpirvBuilder::createGLSLExtInst(QualType resultType, GLSLstd450 inst,
                                 llvm::ArrayRef<SpirvInstruction *> operands,
-                                SourceLocation loc) {
+                                SourceLocation loc, SourceRange range) {
   assert(insertPoint && "null insert point");
   auto *extInst = new (context) SpirvExtInst(
-      resultType, loc, getExtInstSet("GLSL.std.450"), inst, operands);
+      resultType, loc, getExtInstSet("GLSL.std.450"), inst, operands, range);
   insertPoint->addInstruction(extInst);
   return extInst;
 }
@@ -747,10 +747,11 @@ SpirvBuilder::createGLSLExtInst(QualType resultType, GLSLstd450 inst,
 SpirvInstruction *
 SpirvBuilder::createGLSLExtInst(const SpirvType *resultType, GLSLstd450 inst,
                                 llvm::ArrayRef<SpirvInstruction *> operands,
-                                SourceLocation loc) {
+                                SourceLocation loc, SourceRange range) {
   assert(insertPoint && "null insert point");
   auto *extInst = new (context) SpirvExtInst(
-      /*QualType*/ {}, loc, getExtInstSet("GLSL.std.450"), inst, operands);
+      /*QualType*/ {}, loc, getExtInstSet("GLSL.std.450"), inst, operands,
+	  range);
   extInst->setResultType(resultType);
   insertPoint->addInstruction(extInst);
   return extInst;

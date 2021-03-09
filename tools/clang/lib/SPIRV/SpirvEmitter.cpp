@@ -7095,6 +7095,7 @@ SpirvInstruction *
 SpirvEmitter::processIntrinsicCallExpr(const CallExpr *callExpr) {
   const FunctionDecl *callee = callExpr->getDirectCallee();
   const SourceLocation srcLoc = callExpr->getExprLoc();
+  const SourceRange srcRange = callExpr->getSourceRange();
   assert(hlsl::IsIntrinsicOp(callee) &&
          "doIntrinsicCallExpr was called for a non-intrinsic function.");
 
@@ -7120,7 +7121,7 @@ SpirvEmitter::processIntrinsicCallExpr(const CallExpr *callExpr) {
   case hlsl::IntrinsicOp::IOP_##intrinsicOp: {                                 \
     glslOpcode = GLSLstd450::GLSLstd450##glslOp;                               \
     retVal = processIntrinsicUsingGLSLInst(callExpr, glslOpcode, doEachVec,    \
-                                           srcLoc);                            \
+                                           srcLoc, srcRange);                  \
   } break
 
 #define INTRINSIC_OP_CASE_INT_FLOAT(intrinsicOp, glslIntOp, glslFloatOp,       \
@@ -7129,7 +7130,7 @@ SpirvEmitter::processIntrinsicCallExpr(const CallExpr *callExpr) {
     glslOpcode = isFloatType ? GLSLstd450::GLSLstd450##glslFloatOp             \
                              : GLSLstd450::GLSLstd450##glslIntOp;              \
     retVal = processIntrinsicUsingGLSLInst(callExpr, glslOpcode, doEachVec,    \
-                                           srcLoc);                            \
+                                           srcLoc, srcRange);                  \
   } break
 
 #define INTRINSIC_OP_CASE_SINT_UINT(intrinsicOp, glslSintOp, glslUintOp,       \
@@ -7138,7 +7139,7 @@ SpirvEmitter::processIntrinsicCallExpr(const CallExpr *callExpr) {
     glslOpcode = isSintType ? GLSLstd450::GLSLstd450##glslSintOp               \
                             : GLSLstd450::GLSLstd450##glslUintOp;              \
     retVal = processIntrinsicUsingGLSLInst(callExpr, glslOpcode, doEachVec,    \
-                                           srcLoc);                            \
+                                           srcLoc, srcRange);                  \
   } break
 
 #define INTRINSIC_OP_CASE_SINT_UINT_FLOAT(intrinsicOp, glslSintOp, glslUintOp, \
@@ -7149,7 +7150,7 @@ SpirvEmitter::processIntrinsicCallExpr(const CallExpr *callExpr) {
                      : isSintType ? GLSLstd450::GLSLstd450##glslSintOp         \
                                   : GLSLstd450::GLSLstd450##glslUintOp;        \
     retVal = processIntrinsicUsingGLSLInst(callExpr, glslOpcode, doEachVec,    \
-                                           srcLoc);                            \
+                                           srcLoc, srcRange);                  \
   } break
 
   switch (const auto hlslOpcode = static_cast<hlsl::IntrinsicOp>(opcode)) {
@@ -7287,7 +7288,8 @@ SpirvEmitter::processIntrinsicCallExpr(const CallExpr *callExpr) {
     else
       retVal =
           processIntrinsicUsingGLSLInst(callExpr, GLSLstd450::GLSLstd450SSign,
-                                        /*actPerRowForMatrices*/ true, srcLoc);
+                                        /*actPerRowForMatrices*/ true, srcLoc,
+                                        srcRange);
   } break;
   case hlsl::IntrinsicOp::IOP_D3DCOLORtoUBYTE4:
     retVal = processD3DCOLORtoUBYTE4(callExpr);
@@ -7320,7 +7322,7 @@ SpirvEmitter::processIntrinsicCallExpr(const CallExpr *callExpr) {
     auto *var =
         declIdMapper.getBuiltinVar(spv::BuiltIn::SubgroupSize, retType, srcLoc);
 
-    retVal = spvBuilder.createLoad(retType, var, srcLoc);
+    retVal = spvBuilder.createLoad(retType, var, srcLoc, srcRange);
   } break;
   case hlsl::IntrinsicOp::IOP_WaveGetLaneIndex: {
     featureManager.requestTargetEnv(SPV_ENV_VULKAN_1_1, "WaveGetLaneIndex",
@@ -7328,7 +7330,7 @@ SpirvEmitter::processIntrinsicCallExpr(const CallExpr *callExpr) {
     const QualType retType = callExpr->getCallReturnType(astContext);
     auto *var = declIdMapper.getBuiltinVar(
         spv::BuiltIn::SubgroupLocalInvocationId, retType, srcLoc);
-    retVal = spvBuilder.createLoad(retType, var, srcLoc);
+    retVal = spvBuilder.createLoad(retType, var, srcLoc, srcRange);
   } break;
   case hlsl::IntrinsicOp::IOP_WaveIsFirstLane:
     retVal = processWaveQuery(callExpr, spv::Op::OpGroupNonUniformElect);
@@ -9607,6 +9609,7 @@ SpirvInstruction *SpirvEmitter::processIntrinsicUsingSpirvInst(
     }
 
   const auto loc = callExpr->getExprLoc();
+  const auto range = callExpr->getSourceRange();
   const QualType returnType = callExpr->getType();
   if (callExpr->getNumArgs() == 1u) {
     const Expr *arg = callExpr->getArg(0);
@@ -9615,33 +9618,35 @@ SpirvInstruction *SpirvEmitter::processIntrinsicUsingSpirvInst(
     // If the instruction does not operate on matrices, we can perform the
     // instruction on each vector of the matrix.
     if (actPerRowForMatrices && isMxNMatrix(arg->getType())) {
-      const auto actOnEachVec = [this, opcode, loc](uint32_t /*index*/,
+      const auto actOnEachVec = [this, opcode, loc, range](uint32_t /*index*/,
                                                     QualType vecType,
                                                     SpirvInstruction *curRow) {
-        return spvBuilder.createUnaryOp(opcode, vecType, curRow, loc);
+        return spvBuilder.createUnaryOp(opcode, vecType, curRow, loc, range);
       };
-      return processEachVectorInMatrix(arg, argId, actOnEachVec, loc);
+      return processEachVectorInMatrix(arg, argId, actOnEachVec, loc, range);
     }
-    return spvBuilder.createUnaryOp(opcode, returnType, argId, loc);
+    return spvBuilder.createUnaryOp(opcode, returnType, argId, loc, range);
   } else if (callExpr->getNumArgs() == 2u) {
     const Expr *arg0 = callExpr->getArg(0);
     auto *arg0Id = doExpr(arg0);
     auto *arg1Id = doExpr(callExpr->getArg(1));
     const auto arg1Loc = callExpr->getArg(1)->getLocStart();
+    const auto arg1Range = callExpr->getArg(1)->getSourceRange();
     // If the instruction does not operate on matrices, we can perform the
     // instruction on each vector of the matrix.
     if (actPerRowForMatrices && isMxNMatrix(arg0->getType())) {
-      const auto actOnEachVec = [this, opcode, arg1Id, loc,
-                                 arg1Loc](uint32_t index, QualType vecType,
+      const auto actOnEachVec = [this, opcode, arg1Id, loc, range, arg1Loc,
+                                 arg1Range](uint32_t index, QualType vecType,
                                           SpirvInstruction *arg0Row) {
         auto *arg1Row = spvBuilder.createCompositeExtract(vecType, arg1Id,
-                                                          {index}, arg1Loc);
+                                                          {index}, arg1Loc,
+                                                          arg1Range);
         return spvBuilder.createBinaryOp(opcode, vecType, arg0Row, arg1Row,
-                                         loc);
+                                         loc, range);
       };
-      return processEachVectorInMatrix(arg0, arg0Id, actOnEachVec, loc);
+      return processEachVectorInMatrix(arg0, arg0Id, actOnEachVec, loc, range);
     }
-    return spvBuilder.createBinaryOp(opcode, returnType, arg0Id, arg1Id, loc);
+    return spvBuilder.createBinaryOp(opcode, returnType, arg0Id, arg1Id, loc, range);
   }
 
   emitError("unsupported %0 intrinsic function", loc)
@@ -9651,7 +9656,7 @@ SpirvInstruction *SpirvEmitter::processIntrinsicUsingSpirvInst(
 
 SpirvInstruction *SpirvEmitter::processIntrinsicUsingGLSLInst(
     const CallExpr *callExpr, GLSLstd450 opcode, bool actPerRowForMatrices,
-    SourceLocation loc) {
+    SourceLocation loc, SourceRange range) {
   // Import the GLSL.std.450 extended instruction set.
   const QualType returnType = callExpr->getType();
 
@@ -9662,35 +9667,40 @@ SpirvInstruction *SpirvEmitter::processIntrinsicUsingGLSLInst(
     // If the instruction does not operate on matrices, we can perform the
     // instruction on each vector of the matrix.
     if (actPerRowForMatrices && isMxNMatrix(arg->getType())) {
-      const auto actOnEachVec = [this, loc,
+      const auto actOnEachVec = [this, loc, range,
                                  opcode](uint32_t /*index*/, QualType vecType,
                                          SpirvInstruction *curRowInstr) {
         return spvBuilder.createGLSLExtInst(vecType, opcode, {curRowInstr},
-                                            loc);
+                                            loc, range);
       };
-      return processEachVectorInMatrix(arg, argInstr, actOnEachVec, loc);
+      return processEachVectorInMatrix(arg, argInstr, actOnEachVec, loc,
+                                       range);
     }
-    return spvBuilder.createGLSLExtInst(returnType, opcode, {argInstr}, loc);
+    return spvBuilder.createGLSLExtInst(returnType, opcode, {argInstr}, loc,
+                                        range);
   } else if (callExpr->getNumArgs() == 2u) {
     const Expr *arg0 = callExpr->getArg(0);
     auto *arg0Instr = doExpr(arg0);
     auto *arg1Instr = doExpr(callExpr->getArg(1));
     const auto arg1Loc = callExpr->getArg(1)->getLocStart();
+    const auto arg1Range = callExpr->getArg(1)->getSourceRange();
     // If the instruction does not operate on matrices, we can perform the
     // instruction on each vector of the matrix.
     if (actPerRowForMatrices && isMxNMatrix(arg0->getType())) {
-      const auto actOnEachVec = [this, loc, opcode, arg1Instr,
+      const auto actOnEachVec = [this, loc, range, opcode, arg1Instr, arg1Range,
                                  arg1Loc](uint32_t index, QualType vecType,
                                           SpirvInstruction *arg0RowInstr) {
         auto *arg1RowInstr = spvBuilder.createCompositeExtract(
-            vecType, arg1Instr, {index}, arg1Loc);
+            vecType, arg1Instr, {index}, arg1Loc, arg1Range);
         return spvBuilder.createGLSLExtInst(vecType, opcode,
-                                            {arg0RowInstr, arg1RowInstr}, loc);
+                                            {arg0RowInstr, arg1RowInstr}, loc,
+                                            range);
       };
-      return processEachVectorInMatrix(arg0, arg0Instr, actOnEachVec, loc);
+      return processEachVectorInMatrix(arg0, arg0Instr, actOnEachVec, loc,
+                                       range);
     }
     return spvBuilder.createGLSLExtInst(returnType, opcode,
-                                        {arg0Instr, arg1Instr}, loc);
+                                        {arg0Instr, arg1Instr}, loc, range);
   } else if (callExpr->getNumArgs() == 3u) {
     const Expr *arg0 = callExpr->getArg(0);
     auto *arg0Instr = doExpr(arg0);
@@ -9698,24 +9708,29 @@ SpirvInstruction *SpirvEmitter::processIntrinsicUsingGLSLInst(
     auto *arg2Instr = doExpr(callExpr->getArg(2));
     auto arg1Loc = callExpr->getArg(1)->getLocStart();
     auto arg2Loc = callExpr->getArg(2)->getLocStart();
+    const auto arg1Range = callExpr->getArg(1)->getSourceRange();
+    const auto arg2Range = callExpr->getArg(2)->getSourceRange();
     // If the instruction does not operate on matrices, we can perform the
     // instruction on each vector of the matrix.
     if (actPerRowForMatrices && isMxNMatrix(arg0->getType())) {
-      const auto actOnEachVec = [this, loc, opcode, arg1Instr, arg2Instr,
-                                 arg1Loc,
-                                 arg2Loc](uint32_t index, QualType vecType,
+      const auto actOnEachVec = [this, loc, range, opcode, arg1Instr, arg2Instr,
+                                 arg1Loc, arg2Loc, arg1Range,
+                                 arg2Range](uint32_t index, QualType vecType,
                                           SpirvInstruction *arg0RowInstr) {
         auto *arg1RowInstr = spvBuilder.createCompositeExtract(
-            vecType, arg1Instr, {index}, arg1Loc);
+            vecType, arg1Instr, {index}, arg1Loc, arg1Range);
         auto *arg2RowInstr = spvBuilder.createCompositeExtract(
-            vecType, arg2Instr, {index}, arg2Loc);
+            vecType, arg2Instr, {index}, arg2Loc, arg2Range);
         return spvBuilder.createGLSLExtInst(
-            vecType, opcode, {arg0RowInstr, arg1RowInstr, arg2RowInstr}, loc);
+            vecType, opcode, {arg0RowInstr, arg1RowInstr, arg2RowInstr}, loc,
+            range);
       };
-      return processEachVectorInMatrix(arg0, arg0Instr, actOnEachVec, loc);
+      return processEachVectorInMatrix(arg0, arg0Instr, actOnEachVec, loc,
+                                       range);
     }
     return spvBuilder.createGLSLExtInst(returnType, opcode,
-                                        {arg0Instr, arg1Instr, arg2Instr}, loc);
+                                        {arg0Instr, arg1Instr, arg2Instr}, loc,
+                                        range);
   }
 
   emitError("unsupported %0 intrinsic function", callExpr->getExprLoc())

@@ -341,7 +341,7 @@ public:
   /// given Resident Code and returns the instruction pointer.
   SpirvImageSparseTexelsResident *
   createImageSparseTexelsResident(SpirvInstruction *resident_code,
-                                  SourceLocation);
+                                  SourceLocation, SourceRange range = {});
 
   /// \brief Creates an image query instruction.
   /// The given 'lod' is used as the Lod argument in the case of
@@ -403,12 +403,12 @@ public:
   /// resulting instruction pointer.
   SpirvInstruction *
   createGLSLExtInst(QualType resultType, GLSLstd450 instId,
-                    llvm::ArrayRef<SpirvInstruction *> operands,
-                    SourceLocation);
+                    llvm::ArrayRef<SpirvInstruction *> operands, SourceLocation,
+                    SourceRange range = {});
   SpirvInstruction *
   createGLSLExtInst(const SpirvType *resultType, GLSLstd450 instId,
-                    llvm::ArrayRef<SpirvInstruction *> operands,
-                    SourceLocation);
+                    llvm::ArrayRef<SpirvInstruction *> operands, SourceLocation,
+                    SourceRange range = {});
 
   /// \brief Creates an OpExtInst instruction for the NonSemantic.DebugPrintf
   /// extension set. Returns the resulting instruction pointer.
