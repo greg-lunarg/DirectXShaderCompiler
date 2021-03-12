@@ -159,7 +159,8 @@ public:
                                               SpirvInstruction *composite,
                                               llvm::ArrayRef<uint32_t> indices,
                                               SpirvInstruction *object,
-                                              SourceLocation loc);
+                                              SourceLocation loc,
+                                              SourceRange range = {});
 
   /// \brief Creates a vector shuffle instruction of selecting from the two
   /// vectors using selectors and returns the instruction pointer of the result
@@ -193,7 +194,7 @@ public:
   SpirvFunctionCall *
   createFunctionCall(QualType returnType, SpirvFunction *func,
                      llvm::ArrayRef<SpirvInstruction *> params,
-                     SourceLocation loc);
+                     SourceLocation loc, SourceRange range = {});
 
   /// \brief Creates an access chain instruction to retrieve the element from
   /// the given base by walking through the given indexes. Returns the
@@ -244,13 +245,14 @@ public:
                               SpirvInstruction *orignalValuePtr,
                               spv::Scope scope,
                               spv::MemorySemanticsMask memorySemantics,
-                              SpirvInstruction *valueToOp, SourceLocation);
+                              SpirvInstruction *valueToOp, SourceLocation,
+                              SourceRange range = {});
   SpirvAtomic *createAtomicCompareExchange(
       QualType resultType, SpirvInstruction *orignalValuePtr, spv::Scope scope,
       spv::MemorySemanticsMask equalMemorySemantics,
       spv::MemorySemanticsMask unequalMemorySemantics,
       SpirvInstruction *valueToOp, SpirvInstruction *comparator,
-      SourceLocation);
+      SourceLocation, SourceRange range = {});
 
   /// \brief Creates an OpSampledImage SPIR-V instruction with proper
   /// decorations for the given parameters.
@@ -311,7 +313,7 @@ public:
       SpirvInstruction *lod, SpirvInstruction *constOffset,
       SpirvInstruction *varOffset, SpirvInstruction *constOffsets,
       SpirvInstruction *sample, SpirvInstruction *residencyCode,
-      SourceLocation loc);
+      SourceLocation loc, SourceRange range = {});
 
   /// \brief Creates SPIR-V instructions for writing to the given image.
   void createImageWrite(QualType imageType, SpirvInstruction *image,
@@ -349,13 +351,15 @@ public:
   /// case of OpImageQueryLod.
   SpirvImageQuery *createImageQuery(spv::Op opcode, QualType resultType,
                                     SourceLocation loc, SpirvInstruction *image,
-                                    SpirvInstruction *lod = nullptr);
+                                    SpirvInstruction *lod = nullptr,
+                                    SourceRange range = {});
 
   /// \brief Creates a select operation with the given values for true and false
   /// cases and returns the instruction pointer.
   SpirvSelect *createSelect(QualType resultType, SpirvInstruction *condition,
                             SpirvInstruction *trueValue,
-                            SpirvInstruction *falseValue, SourceLocation);
+                            SpirvInstruction *falseValue, SourceLocation,
+                            SourceRange range = {});
 
   /// \brief Creates a switch statement for the given selector, default, and
   /// branches. Results in OpSelectionMerge followed by OpSwitch.
@@ -366,7 +370,7 @@ public:
                SourceLocation);
 
   /// \brief Creates a fragment-shader discard via by emitting OpKill.
-  void createKill(SourceLocation);
+  void createKill(SourceLocation, SourceRange range = {});
 
   /// \brief Creates an unconditional branch to the given target label.
   /// If mergeBB and continueBB are non-null, it creates an OpLoopMerge
@@ -374,7 +378,8 @@ public:
   void createBranch(
       SpirvBasicBlock *targetLabel, SourceLocation loc,
       SpirvBasicBlock *mergeBB = nullptr, SpirvBasicBlock *continueBB = nullptr,
-      spv::LoopControlMask loopControl = spv::LoopControlMask::MaskNone);
+      spv::LoopControlMask loopControl = spv::LoopControlMask::MaskNone,
+      SourceRange range = {});
 
   /// \brief Creates a conditional branch. An OpSelectionMerge instruction
   /// will be created if mergeLabel is not null and continueLabel is null.
@@ -390,7 +395,8 @@ public:
       SpirvBasicBlock *continueLabel = nullptr,
       spv::SelectionControlMask selectionControl =
           spv::SelectionControlMask::MaskNone,
-      spv::LoopControlMask loopControl = spv::LoopControlMask::MaskNone);
+      spv::LoopControlMask loopControl = spv::LoopControlMask::MaskNone,
+      SourceRange range = {});
 
   /// \brief Creates a return instruction.
   void createReturn(SourceLocation, SourceRange range = {});
@@ -421,7 +427,8 @@ public:
   /// is created; otherwise an OpMemoryBarrier is created.
   void createBarrier(spv::Scope memoryScope,
                      spv::MemorySemanticsMask memorySemantics,
-                     llvm::Optional<spv::Scope> exec, SourceLocation);
+                     llvm::Optional<spv::Scope> exec, SourceLocation,
+                     SourceRange range = {});
 
   /// \brief Creates an OpBitFieldInsert SPIR-V instruction for the given
   /// arguments.
@@ -439,15 +446,16 @@ public:
                                               bool isSigned, SourceLocation);
 
   /// \brief Creates an OpEmitVertex instruction.
-  void createEmitVertex(SourceLocation);
+  void createEmitVertex(SourceLocation, SourceRange range = {});
 
   /// \brief Creates an OpEndPrimitive instruction.
-  void createEndPrimitive(SourceLocation);
+  void createEndPrimitive(SourceLocation, SourceRange range = {});
 
   /// \brief Creates an OpArrayLength instruction.
   SpirvArrayLength *createArrayLength(QualType resultType, SourceLocation loc,
                                       SpirvInstruction *structure,
-                                      uint32_t arrayMember);
+                                      uint32_t arrayMember,
+                                      SourceRange range = {});
 
   /// \brief Creates SPIR-V instructions for NV raytracing ops.
   SpirvInstruction *
@@ -504,7 +512,8 @@ public:
   SpirvInstruction *
   createRayQueryOpsKHR(spv::Op opcode, QualType resultType,
                        llvm::ArrayRef<SpirvInstruction *> operands,
-                       bool cullFlags, SourceLocation loc);
+                       bool cullFlags, SourceLocation loc,
+                       SourceRange range = {});
 
   // === SPIR-V Module Structure ===
   inline void setMemoryModel(spv::AddressingModel, spv::MemoryModel);

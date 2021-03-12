@@ -502,11 +502,13 @@ public:
   /// This method is specially for writing back per-vertex data at the time of
   /// OpEmitVertex in GS.
   bool writeBackOutputStream(const NamedDecl *decl, QualType type,
-                             SpirvInstruction *value);
+                             SpirvInstruction *value,
+                             SourceRange range = {});
 
   /// \brief Negates to get the additive inverse of SV_Position.y if requested.
   SpirvInstruction *invertYIfRequested(SpirvInstruction *position,
-                                       SourceLocation loc);
+                                       SourceLocation loc,
+                                       SourceRange range = {});
 
   /// \brief Reciprocates to get the multiplicative inverse of SV_Position.w
   /// if requested.
