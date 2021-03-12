@@ -577,7 +577,7 @@ public:
 
 protected:
   SpirvMerge(Kind kind, spv::Op opcode, SourceLocation loc,
-             SpirvBasicBlock *mergeBlock);
+             SpirvBasicBlock *mergeBlock, SourceRange range = {});
 
   // For LLVM-style RTTI
   static bool classof(const SpirvInstruction *inst) {
@@ -592,7 +592,8 @@ private:
 class SpirvLoopMerge : public SpirvMerge {
 public:
   SpirvLoopMerge(SourceLocation loc, SpirvBasicBlock *mergeBlock,
-                 SpirvBasicBlock *contTarget, spv::LoopControlMask mask);
+                 SpirvBasicBlock *contTarget, spv::LoopControlMask mask,
+                 SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvLoopMerge)
 
@@ -614,7 +615,7 @@ private:
 class SpirvSelectionMerge : public SpirvMerge {
 public:
   SpirvSelectionMerge(SourceLocation loc, SpirvBasicBlock *mergeBlock,
-                      spv::SelectionControlMask mask);
+                      spv::SelectionControlMask mask, SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvSelectionMerge)
 
@@ -730,7 +731,7 @@ private:
 /// \brief OpKill instruction
 class SpirvKill : public SpirvTerminator {
 public:
-  SpirvKill(SourceLocation loc);
+  SpirvKill(SourceLocation loc, SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvKill)
 
@@ -865,12 +866,13 @@ class SpirvAtomic : public SpirvInstruction {
 public:
   SpirvAtomic(spv::Op opcode, QualType resultType, SourceLocation loc,
               SpirvInstruction *pointer, spv::Scope, spv::MemorySemanticsMask,
-              SpirvInstruction *value = nullptr);
+              SpirvInstruction *value = nullptr, SourceRange range = {});
   SpirvAtomic(spv::Op opcode, QualType resultType, SourceLocation loc,
               SpirvInstruction *pointer, spv::Scope,
               spv::MemorySemanticsMask semanticsEqual,
               spv::MemorySemanticsMask semanticsUnequal,
-              SpirvInstruction *value, SpirvInstruction *comparator);
+              SpirvInstruction *value, SpirvInstruction *comparator,
+              SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvAtomic)
 
@@ -909,7 +911,8 @@ class SpirvBarrier : public SpirvInstruction {
 public:
   SpirvBarrier(SourceLocation loc, spv::Scope memoryScope,
                spv::MemorySemanticsMask memorySemantics,
-               llvm::Optional<spv::Scope> executionScope = llvm::None);
+               llvm::Optional<spv::Scope> executionScope = llvm::None,
+               SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvBarrier)
 
@@ -1263,7 +1266,8 @@ class SpirvCompositeInsert : public SpirvInstruction {
 public:
   SpirvCompositeInsert(QualType resultType, SourceLocation loc,
                        SpirvInstruction *composite, SpirvInstruction *object,
-                       llvm::ArrayRef<uint32_t> indices);
+                       llvm::ArrayRef<uint32_t> indices,
+                       SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvCompositeInsert)
 
@@ -1287,7 +1291,7 @@ private:
 /// \brief EmitVertex instruction
 class SpirvEmitVertex : public SpirvInstruction {
 public:
-  SpirvEmitVertex(SourceLocation loc);
+  SpirvEmitVertex(SourceLocation loc, SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvEmitVertex)
 
@@ -1302,7 +1306,7 @@ public:
 /// \brief EndPrimitive instruction
 class SpirvEndPrimitive : public SpirvInstruction {
 public:
-  SpirvEndPrimitive(SourceLocation loc);
+  SpirvEndPrimitive(SourceLocation loc, SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvEndPrimitive)
 
@@ -1345,7 +1349,8 @@ class SpirvFunctionCall : public SpirvInstruction {
 public:
   SpirvFunctionCall(QualType resultType, SourceLocation loc,
                     SpirvFunction *function,
-                    llvm::ArrayRef<SpirvInstruction *> argsVec);
+                    llvm::ArrayRef<SpirvInstruction *> argsVec,
+                    SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvFunctionCall)
 
@@ -1565,7 +1570,7 @@ class SpirvImageQuery : public SpirvInstruction {
 public:
   SpirvImageQuery(spv::Op opcode, QualType resultType, SourceLocation loc,
                   SpirvInstruction *img, SpirvInstruction *lod = nullptr,
-                  SpirvInstruction *coord = nullptr);
+                  SpirvInstruction *coord = nullptr, SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvImageQuery)
 
@@ -1718,7 +1723,8 @@ private:
 class SpirvSelect : public SpirvInstruction {
 public:
   SpirvSelect(QualType resultType, SourceLocation loc, SpirvInstruction *cond,
-              SpirvInstruction *trueId, SpirvInstruction *falseId);
+              SpirvInstruction *trueId, SpirvInstruction *falseId,
+              SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvSelect)
 
@@ -1907,7 +1913,8 @@ private:
 class SpirvArrayLength : public SpirvInstruction {
 public:
   SpirvArrayLength(QualType resultType, SourceLocation loc,
-                   SpirvInstruction *structure, uint32_t arrayMember);
+                   SpirvInstruction *structure, uint32_t arrayMember,
+                   SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvArrayLength)
 
@@ -1955,7 +1962,7 @@ class SpirvRayQueryOpKHR : public SpirvInstruction {
 public:
   SpirvRayQueryOpKHR(QualType resultType, spv::Op opcode,
                      llvm::ArrayRef<SpirvInstruction *> vecOperands, bool flags,
-                     SourceLocation loc);
+                     SourceLocation loc, SourceRange range = {});
 
   DEFINE_RELEASE_MEMORY_FOR_CLASS(SpirvRayQueryOpKHR)
 

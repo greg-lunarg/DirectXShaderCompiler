@@ -2870,7 +2870,8 @@ bool DeclResultIdMapper::createPayloadStageVars(
 
 bool DeclResultIdMapper::writeBackOutputStream(const NamedDecl *decl,
                                                QualType type,
-                                               SpirvInstruction *value) {
+                                               SpirvInstruction *value,
+                                               SourceRange range) {
   assert(spvContext.isGS()); // Only for GS use
 
   if (hlsl::IsHLSLStreamOutputType(type))
@@ -2889,7 +2890,7 @@ bool DeclResultIdMapper::writeBackOutputStream(const NamedDecl *decl,
     if (glPerVertex.tryToAccess(
             hlsl::DXIL::SigPointKind::GSOut, semanticInfo.semantic->GetKind(),
             semanticInfo.index, llvm::None, &value,
-            /*noWriteBack=*/false, /*vecComponent=*/nullptr, loc))
+            /*noWriteBack=*/false, /*vecComponent=*/nullptr, loc, range))
       return true;
 
     // Query the <result-id> for the stage output variable generated out
@@ -2903,16 +2904,16 @@ bool DeclResultIdMapper::writeBackOutputStream(const NamedDecl *decl,
 
     // Negate SV_Position.y if requested
     if (semanticInfo.semantic->GetKind() == hlsl::Semantic::Kind::Position)
-      value = invertYIfRequested(value, loc);
+      value = invertYIfRequested(value, loc, range);
 
     // Boolean stage output variables are represented as unsigned integers.
     if (isBooleanStageIOVar(decl, type, semanticInfo.semantic->GetKind(),
                             hlsl::SigPoint::Kind::GSOut)) {
       QualType uintType = getUintTypeWithSourceComponents(astContext, type);
-      value = theEmitter.castToType(value, type, uintType, loc);
+      value = theEmitter.castToType(value, type, uintType, loc, range);
     }
 
-    spvBuilder.createStore(found->second, value, loc);
+    spvBuilder.createStore(found->second, value, loc, range);
     return true;
   }
 
@@ -2928,11 +2929,10 @@ bool DeclResultIdMapper::writeBackOutputStream(const NamedDecl *decl,
   if (const auto *cxxDecl = type->getAsCXXRecordDecl()) {
     uint32_t baseIndex = 0;
     for (auto base : cxxDecl->bases()) {
-      auto *subValue = spvBuilder.createCompositeExtract(base.getType(), value,
-                                                         {baseIndex++}, loc);
+      auto *subValue = spvBuilder.createCompositeExtract(base.getType(), value, {baseIndex++}, loc, range);
 
       if (!writeBackOutputStream(base.getType()->getAsCXXRecordDecl(),
-                                 base.getType(), subValue))
+                                 base.getType(), subValue, range))
         return false;
     }
   }
@@ -2944,9 +2944,9 @@ bool DeclResultIdMapper::writeBackOutputStream(const NamedDecl *decl,
     const auto fieldType = field->getType();
     auto *subValue = spvBuilder.createCompositeExtract(
         fieldType, value, {getNumBaseClasses(type) + field->getFieldIndex()},
-        loc);
+        loc, range);
 
-    if (!writeBackOutputStream(field, field->getType(), subValue))
+    if (!writeBackOutputStream(field, field->getType(), subValue, range))
       return false;
   }
 
@@ -2955,16 +2955,15 @@ bool DeclResultIdMapper::writeBackOutputStream(const NamedDecl *decl,
 
 SpirvInstruction *
 DeclResultIdMapper::invertYIfRequested(SpirvInstruction *position,
-                                       SourceLocation loc) {
+                                       SourceLocation loc, SourceRange range) {
   // Negate SV_Position.y if requested
   if (spirvOptions.invertY) {
     const auto oldY = spvBuilder.createCompositeExtract(astContext.FloatTy,
-                                                        position, {1}, loc);
-    const auto newY = spvBuilder.createUnaryOp(spv::Op::OpFNegate,
-                                               astContext.FloatTy, oldY, loc);
+                                                        position, {1}, loc, range);
+    const auto newY = spvBuilder.createUnaryOp(spv::Op::OpFNegate, astContext.FloatTy, oldY, loc, range);
     position = spvBuilder.createCompositeInsert(
         astContext.getExtVectorType(astContext.FloatTy, 4), position, {1}, newY,
-        loc);
+        loc, range);
   }
   return position;
 }
