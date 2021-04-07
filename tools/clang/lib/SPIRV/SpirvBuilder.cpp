@@ -660,11 +660,11 @@ void SpirvBuilder::createSwitch(
     SpirvBasicBlock *mergeLabel, SpirvInstruction *selector,
     SpirvBasicBlock *defaultLabel,
     llvm::ArrayRef<std::pair<uint32_t, SpirvBasicBlock *>> target,
-    SourceLocation loc) {
+    SourceLocation loc, SourceRange range) {
   assert(insertPoint && "null insert point");
   // Create the OpSelectioMerege.
-  auto *selectionMerge = new (context)
-      SpirvSelectionMerge(loc, mergeLabel, spv::SelectionControlMask::MaskNone);
+  auto *selectionMerge = new (context) SpirvSelectionMerge(
+      loc, mergeLabel, spv::SelectionControlMask::MaskNone, range);
   insertPoint->addInstruction(selectionMerge);
 
   // Create the OpSwitch.

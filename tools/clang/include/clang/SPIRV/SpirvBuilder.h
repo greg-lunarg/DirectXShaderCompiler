@@ -251,8 +251,8 @@ public:
       QualType resultType, SpirvInstruction *orignalValuePtr, spv::Scope scope,
       spv::MemorySemanticsMask equalMemorySemantics,
       spv::MemorySemanticsMask unequalMemorySemantics,
-      SpirvInstruction *valueToOp, SpirvInstruction *comparator,
-      SourceLocation, SourceRange range = {});
+      SpirvInstruction *valueToOp, SpirvInstruction *comparator, SourceLocation,
+      SourceRange range = {});
 
   /// \brief Creates an OpSampledImage SPIR-V instruction with proper
   /// decorations for the given parameters.
@@ -367,7 +367,7 @@ public:
   createSwitch(SpirvBasicBlock *mergeLabel, SpirvInstruction *selector,
                SpirvBasicBlock *defaultLabel,
                llvm::ArrayRef<std::pair<uint32_t, SpirvBasicBlock *>> target,
-               SourceLocation);
+               SourceLocation, SourceRange);
 
   /// \brief Creates a fragment-shader discard via by emitting OpKill.
   void createKill(SourceLocation, SourceRange range = {});
