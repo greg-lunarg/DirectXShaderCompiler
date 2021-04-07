@@ -12029,6 +12029,7 @@ void SpirvEmitter::processCaseStmtOrDefaultStmt(const Stmt *stmt) {
 void SpirvEmitter::processSwitchStmtUsingSpirvOpSwitch(
     const SwitchStmt *switchStmt) {
   const SourceLocation srcLoc = switchStmt->getSwitchLoc();
+  const SourceRange srcRange = switchStmt->getSourceRange();
 
   // First handle the condition variable DeclStmt if one exists.
   // For example: handle 'int a = b' in the following:
@@ -12052,7 +12053,7 @@ void SpirvEmitter::processSwitchStmtUsingSpirvOpSwitch(
   discoverAllCaseStmtInSwitchStmt(switchStmt->getBody(), &defaultBB, &targets);
 
   // Create the OpSelectionMerge and OpSwitch.
-  spvBuilder.createSwitch(mergeBB, selector, defaultBB, targets, srcLoc);
+  spvBuilder.createSwitch(mergeBB, selector, defaultBB, targets, srcLoc, srcRange);
 
   // Handle the switch body.
   doStmt(switchStmt->getBody());
@@ -12119,12 +12120,14 @@ void SpirvEmitter::processSwitchStmtUsingIfStmts(const SwitchStmt *switchStmt) {
       bo->setType(astContext.getLogicalOperationType());
       curIf->setCond(bo);
       curIf->setThen(cs);
+      curIf->setIfLoc(caseStmt->getCaseLoc());
       // No conditional variable associated with this faux if statement.
       curIf->setConditionVariable(astContext, nullptr);
       // Each If statement is the "else" of the previous if statement.
-      if (prevIfStmt)
+      if (prevIfStmt) {
         prevIfStmt->setElse(curIf);
-      else
+        prevIfStmt->setElseLoc(caseStmt->getCaseLoc());
+      } else
         rootIfStmt = curIf;
       prevIfStmt = curIf;
     } else {
