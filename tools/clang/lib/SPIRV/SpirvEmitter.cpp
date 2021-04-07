@@ -1549,7 +1549,7 @@ void SpirvEmitter::doVarDecl(const VarDecl *decl) {
       if (auto *constInit = tryToEvaluateAsConst(init)) {
         spvBuilder.createStore(var, constInit, loc);
       } else {
-        storeValue(var, loadIfGLValue(init), decl->getType(), loc);
+        storeValue(var, loadIfGLValue(init), decl->getType(), loc, range);
       }
 
       // Update counter variable associated with local variables
