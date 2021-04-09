@@ -3034,7 +3034,7 @@ SpirvEmitter::doCompoundAssignOperator(const CompoundAssignOperator *expr) {
   auto *result = processBinaryOp(
       lhs, rhs, opcode, expr->getComputationLHSType(), expr->getType(),
       expr->getSourceRange(), expr->getOperatorLoc(), &lhsPtr);
-  return processAssignment(lhs, result, true, lhsPtr);
+  return processAssignment(lhs, result, true, lhsPtr, expr->getSourceRange());
 }
 
 SpirvInstruction *
@@ -5871,7 +5871,7 @@ SpirvInstruction *SpirvEmitter::processBinaryOp(
     // amount that is larger than the bitwidth of the LHS.
     rhsVal = spvBuilder.createBinaryOp(spv::Op::OpBitwiseAnd, computationType,
                                        rhsVal, getMaskForBitwidthValue(rhsType),
-                                       loc);
+                                       loc, sourceRange);
     // Fall through
   case BO_Add:
   case BO_Sub:
@@ -5918,7 +5918,7 @@ SpirvInstruction *SpirvEmitter::processBinaryOp(
     SpirvInstruction *val = nullptr;
     if (BinaryOperator::isCompoundAssignmentOp(opcode)) {
       val = spvBuilder.createBinaryOp(spvOp, computationType, lhsVal, rhsVal,
-                                      loc);
+                                      loc, sourceRange);
       // For a compound assignments, the AST does not have the proper implicit
       // cast if lhs and rhs have different types. So we need to manually cast
       // the result back to lhs' type.
