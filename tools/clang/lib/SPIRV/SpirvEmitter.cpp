@@ -1419,7 +1419,7 @@ void SpirvEmitter::doVarDecl(const VarDecl *decl) {
     // Function local variables. Just emit OpStore at the current insert point.
     else if (const Expr *init = decl->getInit()) {
       if (auto *constInit = tryToEvaluateAsConst(init)) {
-        spvBuilder.createStore(var, constInit, loc);
+        spvBuilder.createStore(var, constInit, loc, range);
       } else {
         storeValue(var, loadIfGLValue(init), decl->getType(), loc, range);
       }
@@ -1788,8 +1788,7 @@ void SpirvEmitter::doForStmt(const ForStmt *forStmt,
     doStmt(initStmt);
   }
   const Expr *check = forStmt->getCond();
-  spvBuilder.createBranch(checkBB, check ? check->getLocStart()
-                                         : forStmt->getLocStart());
+  spvBuilder.createBranch(checkBB, SourceLocation());
   spvBuilder.addSuccessor(checkBB);
 
   // Process the <check> block
@@ -1804,8 +1803,7 @@ void SpirvEmitter::doForStmt(const ForStmt *forStmt,
   spvBuilder.createConditionalBranch(
       condition, bodyBB,
       /*false branch*/ mergeBB,
-      check ? check->getLocEnd()
-            : (body ? body->getLocStart() : forStmt->getLocStart()),
+      /*debug noline*/ SourceLocation(),
       /*merge*/ mergeBB, continueBB, spv::SelectionControlMask::MaskNone,
       loopControl);
   spvBuilder.addSuccessor(bodyBB);
@@ -1821,7 +1819,7 @@ void SpirvEmitter::doForStmt(const ForStmt *forStmt,
     doStmt(body);
   }
   if (!spvBuilder.isCurrentBasicBlockTerminated())
-    spvBuilder.createBranch(continueBB, forStmt->getLocEnd());
+    spvBuilder.createBranch(continueBB, SourceLocation());
   spvBuilder.addSuccessor(continueBB);
 
   // Process the <continue> block
@@ -1830,7 +1828,7 @@ void SpirvEmitter::doForStmt(const ForStmt *forStmt,
     doExpr(cont);
   }
   // <continue> should jump back to header
-  spvBuilder.createBranch(checkBB, forStmt->getLocEnd());
+  spvBuilder.createBranch(checkBB, SourceLocation());
   spvBuilder.addSuccessor(checkBB);
 
   // Set insertion point to the <merge> block for subsequent statements
