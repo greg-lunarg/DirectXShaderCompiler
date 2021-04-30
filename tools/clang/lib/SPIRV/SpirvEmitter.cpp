@@ -691,9 +691,10 @@ SpirvEmitter::getOrCreateRichDebugInfo(const SourceLocation &loc) {
               .first->second;
 }
 
-void SpirvEmitter::doStmt(const Stmt *stmt, llvm::ArrayRef<const Attr *> attrs) {
+void SpirvEmitter::doStmt(const Stmt *stmt,
+                          llvm::ArrayRef<const Attr *> attrs) {
   if (const auto *compoundStmt = dyn_cast<CompoundStmt>(stmt)) {
-    if (spirvOptions.debugInfoRich) {
+    if (spirvOptions.debugInfoRich && stmt->getLocStart() != SourceLocation()) {
       // Any opening of curly braces ('{') starts a CompoundStmt in the AST
       // tree. It also means we have a new lexical block!
       const auto loc = stmt->getLocStart();
@@ -1800,12 +1801,12 @@ void SpirvEmitter::doForStmt(const ForStmt *forStmt,
     condition = spvBuilder.getConstantBool(true);
   }
   const Stmt *body = forStmt->getBody();
-  spvBuilder.createConditionalBranch(
-      condition, bodyBB,
-      /*false branch*/ mergeBB,
-      /*debug noline*/ SourceLocation(),
-      /*merge*/ mergeBB, continueBB, spv::SelectionControlMask::MaskNone,
-      loopControl);
+  spvBuilder.createConditionalBranch(condition, bodyBB,
+                                     /*false branch*/ mergeBB,
+                                     /*debug noline*/ SourceLocation(),
+                                     /*merge*/ mergeBB, continueBB,
+                                     spv::SelectionControlMask::MaskNone,
+                                     loopControl);
   spvBuilder.addSuccessor(bodyBB);
   spvBuilder.addSuccessor(mergeBB);
   // The current basic block has OpLoopMerge instruction. We need to set its
@@ -1909,10 +1910,9 @@ void SpirvEmitter::doIfStmt(const IfStmt *ifStmt,
 
   // Create the branch instruction. This will end the current basic block.
   const auto *then = ifStmt->getThen();
-  spvBuilder.createConditionalBranch(condition, thenBB, elseBB,
-                                     SourceLocation(), mergeBB,
-                                     /*continue*/ 0, selectionControl,
-                                     spv::LoopControlMask::MaskNone);
+  spvBuilder.createConditionalBranch(
+      condition, thenBB, elseBB, SourceLocation(), mergeBB,
+      /*continue*/ 0, selectionControl, spv::LoopControlMask::MaskNone);
   spvBuilder.addSuccessor(thenBB);
   spvBuilder.addSuccessor(elseBB);
   // The current basic block has the OpSelectionMerge instruction. We need
@@ -1923,7 +1923,7 @@ void SpirvEmitter::doIfStmt(const IfStmt *ifStmt,
   spvBuilder.setInsertPoint(thenBB);
   doStmt(then);
   if (!spvBuilder.isCurrentBasicBlockTerminated())
-    spvBuilder.createBranch(mergeBB, SourceLocation());
+    spvBuilder.createBranch(mergeBB, ifStmt->getMergeLoc());
   spvBuilder.addSuccessor(mergeBB);
 
   // Handle the else branch (if exists)
@@ -11634,8 +11634,8 @@ void SpirvEmitter::processSwitchStmtUsingSpirvOpSwitch(
   discoverAllCaseStmtInSwitchStmt(switchStmt->getBody(), &defaultBB, &targets);
 
   // Create the OpSelectionMerge and OpSwitch.
-  spvBuilder.createSwitch(mergeBB, selector, defaultBB, targets, SourceLocation(),
-                          SourceRange());
+  spvBuilder.createSwitch(mergeBB, selector, defaultBB, targets,
+                          SourceLocation(), SourceRange());
 
   // Handle the switch body.
   doStmt(switchStmt->getBody());
@@ -11683,26 +11683,33 @@ void SpirvEmitter::processSwitchStmtUsingIfStmts(const SwitchStmt *switchStmt) {
     // Accumulate all non-case/default/break statements as the body for the
     // current case.
     std::vector<Stmt *> statements;
-    for (unsigned i = curCaseIndex + 1;
-         i < flatSwitch.size() && !isa<BreakStmt>(flatSwitch[i]); ++i) {
+    unsigned i = curCaseIndex + 1;
+    for (; i < flatSwitch.size() && !isa<BreakStmt>(flatSwitch[i]); ++i) {
       if (!isa<CaseStmt>(flatSwitch[i]) && !isa<DefaultStmt>(flatSwitch[i]))
         statements.push_back(const_cast<Stmt *>(flatSwitch[i]));
     }
     if (!statements.empty())
       cs->setStmts(astContext, statements.data(), statements.size());
 
+    SourceLocation mergeLoc =
+        (i < flatSwitch.size() && isa<BreakStmt>(flatSwitch[i]))
+            ? flatSwitch[i]->getLocStart()
+            : SourceLocation();
+
     // For non-default cases, generate the IfStmt that compares the switch
     // value to the case value.
     if (auto *caseStmt = dyn_cast<CaseStmt>(curCase)) {
       IfStmt *curIf = new (astContext) IfStmt(Stmt::EmptyShell());
       BinaryOperator *bo = new (astContext) BinaryOperator(Stmt::EmptyShell());
+      // Expr *tmp_cond = new (astContext) Expr(*switchStmt->getCond());
       bo->setLHS(const_cast<Expr *>(switchStmt->getCond()));
       bo->setRHS(const_cast<Expr *>(caseStmt->getLHS()));
       bo->setOpcode(BO_EQ);
       bo->setType(astContext.getLogicalOperationType());
       curIf->setCond(bo);
       curIf->setThen(cs);
-      curIf->setIfLoc(caseStmt->getCaseLoc());
+      curIf->setMergeLoc(mergeLoc);
+      curIf->setIfLoc(prevIfStmt ? SourceLocation() : caseStmt->getCaseLoc());
       // No conditional variable associated with this faux if statement.
       curIf->setConditionVariable(astContext, nullptr);
       // Each If statement is the "else" of the previous if statement.
