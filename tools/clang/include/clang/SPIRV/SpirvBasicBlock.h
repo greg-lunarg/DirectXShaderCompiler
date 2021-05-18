@@ -107,7 +107,7 @@ public:
   /// If a basic block is the first basic block in a function, it must include
   /// all the variable definitions of the entire function.
   ///
-  /// For NonSemantic.Vulkan.DebugInfo.100 we also pass in the function scope
+  /// For NonSemantic.Shader.DebugInfo.100 we also pass in the function scope
   /// and function-level debug declares, since these can't appear outside of
   /// basic blocks.
   bool invokeVisitor(Visitor *, llvm::ArrayRef<SpirvVariable *> vars,

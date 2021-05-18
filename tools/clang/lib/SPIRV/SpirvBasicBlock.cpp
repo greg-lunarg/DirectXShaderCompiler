@@ -59,7 +59,7 @@ bool SpirvBasicBlock::invokeVisitor(
       if (!iter->instruction->invokeVisitor(visitor))
         return false;
     }
-    // for NonSemantic.Vulkan.DebugInfo.100 emit the block's scope only if we
+    // for NonSemantic.Shader.DebugInfo.100 emit the block's scope only if we
     // didn't have a function scope, or if the
     // scopes are different. This means we don't emit redundant scope
     if (debugInfoVulkan) {
@@ -104,7 +104,7 @@ bool SpirvBasicBlock::invokeVisitor(
           return false;
       }
     }
-    // for NonSemantic.Vulkan.DebugInfo.100 emit the block's scope only if we
+    // for NonSemantic.Shader.DebugInfo.100 emit the block's scope only if we
     // didn't have a function scope, or if the
     // scopes are different. This means we don't emit redundant scope
     if (debugInfoVulkan) {

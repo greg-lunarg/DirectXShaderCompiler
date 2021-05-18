@@ -117,7 +117,7 @@ void SortDebugInfoVisitor::whileEachOperandOfDebugInstruction(
     // references to members. Therefore, the edge direction in DAG must be from
     // DebugTypeMember to DebugTypeComposite. DO NOT visit members here.
     //
-    // By comparison, NonSemantic.Vulkan.DebugInfo.100 bans forward references,
+    // By comparison, NonSemantic.Shader.DebugInfo.100 bans forward references,
     // leaving only the reference from composite to members and not the
     // back-reference from member to composite parent. That means we DO want to
     // visit members here.

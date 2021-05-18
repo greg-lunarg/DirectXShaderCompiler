@@ -548,7 +548,7 @@ bool EmitVisitor::visit(SpirvExtInstImport *inst) {
   finalizeInstruction(&preambleBinary);
   // Remember id if needed later for DebugLine
   if (spvOptions.debugInfoVulkan &&
-          setName.equals("NonSemantic.Vulkan.DebugInfo.100") ||
+          setName.equals("NonSemantic.Shader.DebugInfo.100") ||
       !spvOptions.debugInfoVulkan && setName.equals("OpenCL.DebugInfo.100"))
     debugInfoExtInstId = resultId;
   return true;
@@ -1547,6 +1547,9 @@ bool EmitVisitor::visit(SpirvDebugTypeBasic *inst) {
   curInst.push_back(typeNameId);
   curInst.push_back(getOrAssignResultId<SpirvInstruction>(inst->getSize()));
   curInst.push_back(getLiteralEncodedForDebugInfo(inst->getEncoding()));
+  // Vulkan needs flag operand. TODO(greg-lunarg): Set flag correctly.
+  if (spvOptions.debugInfoVulkan)
+      curInst.push_back(getLiteralEncodedForDebugInfo(0));
   finalizeInstruction(&richDebugInfo);
   return true;
 }

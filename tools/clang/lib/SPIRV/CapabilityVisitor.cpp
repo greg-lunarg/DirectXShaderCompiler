@@ -588,8 +588,8 @@ bool CapabilityVisitor::visit(SpirvExtInstImport *instr) {
     addExtension(Extension::KHR_non_semantic_info, "DebugPrintf",
                  /*SourceLocation*/ {});
   else if (instr->getExtendedInstSetName() ==
-           "NonSemantic.Vulkan.DebugInfo.100")
-    addExtension(Extension::KHR_non_semantic_info, "Vulkan.DebugInfo.100",
+           "NonSemantic.Shader.DebugInfo.100")
+    addExtension(Extension::KHR_non_semantic_info, "Shader.DebugInfo.100",
                  /*SourceLocation*/ {});
   return true;
 }
