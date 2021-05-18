@@ -43,7 +43,7 @@ bool SpirvFunction::invokeVisitor(Visitor *visitor, bool reverseOrder) {
 
   const bool debugInfoVulkan = visitor->getCodeGenOptions().debugInfoVulkan;
 
-  // when emitting NonSemantic.Vulkan.DebugInfo.100 the DebugScope and
+  // when emitting NonSemantic.Shader.DebugInfo.100 the DebugScope and
   // DebugDeclares must be emitted in the first basic block, otherwise for
   // OpenCL.DebugInfo.100 we can emit them here.
   SpirvDebugScope *functionScope = nullptr;

@@ -976,7 +976,7 @@ SpirvExtInstImport *SpirvBuilder::getExtInstSet(llvm::StringRef extName) {
 }
 
 SpirvExtInstImport *SpirvBuilder::getDebugInfoExtInstSet(bool vulkanDebugInfo) {
-  return getExtInstSet(vulkanDebugInfo ? "NonSemantic.Vulkan.DebugInfo.100"
+  return getExtInstSet(vulkanDebugInfo ? "NonSemantic.Shader.DebugInfo.100"
                                        : "OpenCL.DebugInfo.100");
 }
 

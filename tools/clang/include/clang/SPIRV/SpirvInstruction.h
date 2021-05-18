@@ -127,7 +127,7 @@ public:
     IK_VectorShuffle,             // OpVectorShuffle
 
     // For DebugInfo instructions defined in
-    // OpenCL.DebugInfo.100 and NonSemantic.Vulkan.DebugInfo.100
+    // OpenCL.DebugInfo.100 and NonSemantic.Shader.DebugInfo.100
     IK_DebugInfoNone,
     IK_DebugCompilationUnit,
     IK_DebugSource,

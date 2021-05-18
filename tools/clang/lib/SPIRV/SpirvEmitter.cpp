@@ -1117,7 +1117,7 @@ void SpirvEmitter::doFunctionDecl(const FunctionDecl *decl) {
     spvBuilder.setInsertPoint(entryLabel);
 
     // add DebugFunctionDefinition if we are emitting
-    // NonSemantic.Vulkan.DebugInfo.100 debug info
+    // NonSemantic.Shader.DebugInfo.100 debug info
     if (spirvOptions.debugInfoVulkan && debugFunction)
       spvBuilder.createDebugFunctionDef(debugFunction, func);
 
