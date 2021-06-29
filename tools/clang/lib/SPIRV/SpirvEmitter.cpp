@@ -772,7 +772,8 @@ SpirvEmitter::getOrCreateRichDebugInfo(const SourceLocation &loc) {
               .first->second;
 }
 
-void SpirvEmitter::doStmt(const Stmt *stmt, llvm::ArrayRef<const Attr *> attrs) {
+void SpirvEmitter::doStmt(const Stmt *stmt,
+                          llvm::ArrayRef<const Attr *> attrs) {
   if (const auto *compoundStmt = dyn_cast<CompoundStmt>(stmt)) {
     if (spirvOptions.debugInfoRich) {
       // Any opening of curly braces ('{') starts a CompoundStmt in the AST
@@ -1071,7 +1072,7 @@ SpirvInstruction *SpirvEmitter::castToType(SpirvInstruction *value,
 
 void SpirvEmitter::doFunctionDecl(const FunctionDecl *decl) {
   // Forward declaration of a function inside another.
-  if(!decl->isThisDeclarationADefinition()) {
+  if (!decl->isThisDeclarationADefinition()) {
     addFunctionToWorkQueue(spvContext.getCurrentShaderModelKind(), decl,
                            /*isEntryFunction*/ false);
     return;
@@ -2039,10 +2040,11 @@ void SpirvEmitter::doIfStmt(const IfStmt *ifStmt,
 
   // Create the branch instruction. This will end the current basic block.
   const auto *then = ifStmt->getThen();
-  spvBuilder.createConditionalBranch(condition, thenBB, elseBB,
-                                     SourceLocation(), mergeBB,
-                                     /*continue*/ 0, selectionControl,
-                                     spv::LoopControlMask::MaskNone);
+  SourceLocation cbr_loc =
+      spirvOptions.debugInfoVulkan ? SourceLocation() : then->getLocStart();
+  spvBuilder.createConditionalBranch(
+      condition, thenBB, elseBB, cbr_loc, mergeBB,
+      /*continue*/ 0, selectionControl, spv::LoopControlMask::MaskNone);
   spvBuilder.addSuccessor(thenBB);
   spvBuilder.addSuccessor(elseBB);
   // The current basic block has the OpSelectionMerge instruction. We need
@@ -2052,8 +2054,11 @@ void SpirvEmitter::doIfStmt(const IfStmt *ifStmt,
   // Handle the then branch
   spvBuilder.setInsertPoint(thenBB);
   doStmt(then);
-  if (!spvBuilder.isCurrentBasicBlockTerminated())
-    spvBuilder.createBranch(mergeBB, SourceLocation());
+  if (!spvBuilder.isCurrentBasicBlockTerminated()) {
+    SourceLocation mrg_loc =
+        spirvOptions.debugInfoVulkan ? SourceLocation() : ifStmt->getLocEnd();
+    spvBuilder.createBranch(mergeBB, mrg_loc);
+  }
   spvBuilder.addSuccessor(mergeBB);
 
   // Handle the else branch (if exists)
@@ -2061,8 +2066,11 @@ void SpirvEmitter::doIfStmt(const IfStmt *ifStmt,
     spvBuilder.setInsertPoint(elseBB);
     const auto *elseStmt = ifStmt->getElse();
     doStmt(elseStmt);
-    if (!spvBuilder.isCurrentBasicBlockTerminated())
-      spvBuilder.createBranch(mergeBB, SourceLocation());
+    if (!spvBuilder.isCurrentBasicBlockTerminated()) {
+      SourceLocation mrg_loc =
+          spirvOptions.debugInfoVulkan ? SourceLocation() : elseStmt->getLocEnd();
+      spvBuilder.createBranch(mergeBB, mrg_loc);
+    }
     spvBuilder.addSuccessor(mergeBB);
   }
 
@@ -2249,29 +2257,31 @@ SpirvInstruction *SpirvEmitter::doCallExpr(const CallExpr *callExpr) {
   return processCall(callExpr);
 }
 
-SpirvInstruction *SpirvEmitter::getBaseOfMemberFunction(QualType objectType,
-                                             SpirvInstruction * objInstr,
-                                             const CXXMethodDecl* memberFn,
-                                       SourceLocation loc) {
+SpirvInstruction *SpirvEmitter::getBaseOfMemberFunction(
+    QualType objectType, SpirvInstruction *objInstr,
+    const CXXMethodDecl *memberFn, SourceLocation loc) {
   // If objectType is different from the parent of memberFn, memberFn should be
   // defined in a base struct/class of objectType. We create OpAccessChain with
   // index 0 while iterating bases of objectType until we find the base with
   // the definition of memberFn.
   if (const auto *ptrType = objectType->getAs<PointerType>()) {
-    if (const auto *recordType = ptrType->getPointeeType()->getAs<RecordType>()) {
+    if (const auto *recordType =
+            ptrType->getPointeeType()->getAs<RecordType>()) {
       const auto *parentDeclOfMemberFn = memberFn->getParent();
       if (recordType->getDecl() != parentDeclOfMemberFn) {
-        const auto *cxxRecordDecl = dyn_cast<CXXRecordDecl>(recordType->getDecl());
-        auto *zero =
-            spvBuilder.getConstantInt(astContext.UnsignedIntTy, llvm::APInt(32, 0));
-        for (auto baseItr = cxxRecordDecl->bases_begin(), itrEnd = cxxRecordDecl->bases_end();
+        const auto *cxxRecordDecl =
+            dyn_cast<CXXRecordDecl>(recordType->getDecl());
+        auto *zero = spvBuilder.getConstantInt(astContext.UnsignedIntTy,
+                                               llvm::APInt(32, 0));
+        for (auto baseItr = cxxRecordDecl->bases_begin(),
+                  itrEnd = cxxRecordDecl->bases_end();
              baseItr != itrEnd; baseItr++) {
           const auto *baseType = baseItr->getType()->getAs<RecordType>();
           objectType = astContext.getPointerType(baseType->desugar());
-          objInstr = spvBuilder.createAccessChain(objectType,
-                                                  objInstr, {zero},
-                                                  loc);
-          if (baseType->getDecl() == parentDeclOfMemberFn) return objInstr;
+          objInstr =
+              spvBuilder.createAccessChain(objectType, objInstr, {zero}, loc);
+          if (baseType->getDecl() == parentDeclOfMemberFn)
+            return objInstr;
         }
       }
     }
@@ -2329,7 +2339,8 @@ SpirvInstruction *SpirvEmitter::processCall(const CallExpr *callExpr) {
 
       objectType = object->getType();
       objInstr = doExpr(object);
-      if (auto *accessToBaseInstr = getBaseOfMemberFunction(objectType, objInstr, memberFn, memberCall->getExprLoc())) {
+      if (auto *accessToBaseInstr = getBaseOfMemberFunction(
+              objectType, objInstr, memberFn, memberCall->getExprLoc())) {
         objInstr = accessToBaseInstr;
         objectType = accessToBaseInstr->getAstResultType();
       }
