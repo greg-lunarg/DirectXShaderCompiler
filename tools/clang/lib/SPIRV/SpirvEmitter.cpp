@@ -1917,7 +1917,11 @@ void SpirvEmitter::doForStmt(const ForStmt *forStmt,
     doStmt(initStmt);
   }
   const Expr *check = forStmt->getCond();
-  spvBuilder.createBranch(checkBB, SourceLocation());
+  SourceLocation initLoc =
+      spirvOptions.debugInfoVulkan
+          ? SourceLocation()
+          : (check ? check->getLocStart() : forStmt->getLocStart());
+  spvBuilder.createBranch(checkBB, initLoc);
   spvBuilder.addSuccessor(checkBB);
 
   // Process the <check> block
@@ -1929,12 +1933,16 @@ void SpirvEmitter::doForStmt(const ForStmt *forStmt,
     condition = spvBuilder.getConstantBool(true);
   }
   const Stmt *body = forStmt->getBody();
-  spvBuilder.createConditionalBranch(
-      condition, bodyBB,
-      /*false branch*/ mergeBB,
-      /*debug noline*/ SourceLocation(),
-      /*merge*/ mergeBB, continueBB, spv::SelectionControlMask::MaskNone,
-      loopControl);
+  SourceLocation condBranchLoc =
+      spirvOptions.debugInfoVulkan
+          ? SourceLocation()
+          : (check ? check->getLocEnd()
+                   : (body ? body->getLocStart() : forStmt->getLocStart()));
+  spvBuilder.createConditionalBranch(condition, bodyBB,
+                                     /*false branch*/ mergeBB, condBranchLoc,
+                                     /*merge*/ mergeBB, continueBB,
+                                     spv::SelectionControlMask::MaskNone,
+                                     loopControl);
   spvBuilder.addSuccessor(bodyBB);
   spvBuilder.addSuccessor(mergeBB);
   // The current basic block has OpLoopMerge instruction. We need to set its
@@ -1947,8 +1955,11 @@ void SpirvEmitter::doForStmt(const ForStmt *forStmt,
   if (body) {
     doStmt(body);
   }
-  if (!spvBuilder.isCurrentBasicBlockTerminated())
-    spvBuilder.createBranch(continueBB, SourceLocation());
+  if (!spvBuilder.isCurrentBasicBlockTerminated()) {
+    SourceLocation continueLoc =
+        spirvOptions.debugInfoVulkan ? SourceLocation() : forStmt->getLocEnd();
+    spvBuilder.createBranch(continueBB, continueLoc);
+  }
   spvBuilder.addSuccessor(continueBB);
 
   // Process the <continue> block
@@ -1957,7 +1968,9 @@ void SpirvEmitter::doForStmt(const ForStmt *forStmt,
     doExpr(cont);
   }
   // <continue> should jump back to header
-  spvBuilder.createBranch(checkBB, SourceLocation());
+  SourceLocation checkLoc =
+      spirvOptions.debugInfoVulkan ? SourceLocation() : forStmt->getLocEnd();
+  spvBuilder.createBranch(checkBB, checkLoc);
   spvBuilder.addSuccessor(checkBB);
 
   // Set insertion point to the <merge> block for subsequent statements
@@ -2038,10 +2051,10 @@ void SpirvEmitter::doIfStmt(const IfStmt *ifStmt,
 
   // Create the branch instruction. This will end the current basic block.
   const auto *then = ifStmt->getThen();
-  SourceLocation cbr_loc =
+  SourceLocation condBranchLoc =
       spirvOptions.debugInfoVulkan ? SourceLocation() : then->getLocStart();
   spvBuilder.createConditionalBranch(
-      condition, thenBB, elseBB, cbr_loc, mergeBB,
+      condition, thenBB, elseBB, condBranchLoc, mergeBB,
       /*continue*/ 0, selectionControl, spv::LoopControlMask::MaskNone);
   spvBuilder.addSuccessor(thenBB);
   spvBuilder.addSuccessor(elseBB);
@@ -2053,9 +2066,9 @@ void SpirvEmitter::doIfStmt(const IfStmt *ifStmt,
   spvBuilder.setInsertPoint(thenBB);
   doStmt(then);
   if (!spvBuilder.isCurrentBasicBlockTerminated()) {
-    SourceLocation mrg_loc =
+    SourceLocation mergeLoc =
         spirvOptions.debugInfoVulkan ? SourceLocation() : ifStmt->getLocEnd();
-    spvBuilder.createBranch(mergeBB, mrg_loc);
+    spvBuilder.createBranch(mergeBB, mergeLoc);
   }
   spvBuilder.addSuccessor(mergeBB);
 
@@ -2065,9 +2078,10 @@ void SpirvEmitter::doIfStmt(const IfStmt *ifStmt,
     const auto *elseStmt = ifStmt->getElse();
     doStmt(elseStmt);
     if (!spvBuilder.isCurrentBasicBlockTerminated()) {
-      SourceLocation mrg_loc =
-          spirvOptions.debugInfoVulkan ? SourceLocation() : elseStmt->getLocEnd();
-      spvBuilder.createBranch(mergeBB, mrg_loc);
+      SourceLocation mergeLoc = spirvOptions.debugInfoVulkan
+                                    ? SourceLocation()
+                                    : elseStmt->getLocEnd();
+      spvBuilder.createBranch(mergeBB, mergeLoc);
     }
     spvBuilder.addSuccessor(mergeBB);
   }
