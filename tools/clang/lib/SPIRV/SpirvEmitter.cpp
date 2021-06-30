@@ -12069,7 +12069,9 @@ void SpirvEmitter::processSwitchStmtUsingSpirvOpSwitch(
   discoverAllCaseStmtInSwitchStmt(switchStmt->getBody(), &defaultBB, &targets);
 
   // Create the OpSelectionMerge and OpSwitch.
-  spvBuilder.createSwitch(mergeBB, selector, defaultBB, targets, SourceLocation(),
+  SourceLocation switchLoc =
+      spirvOptions.debugInfoVulkan ? SourceLocation() : srcLoc;
+  spvBuilder.createSwitch(mergeBB, selector, defaultBB, targets, switchLoc,
                           SourceRange());
 
   // Handle the switch body.
